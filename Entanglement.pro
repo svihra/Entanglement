@@ -1,0 +1,20 @@
+TEMPLATE = app
+CONFIG += console c++11
+CONFIG -= app_bundle
+CONFIG -= qt
+
+INCLUDEPATH += $$system(${ROOTSYS}/bin/root-config --incdir)
+INCLUDEPATH += $$system(${ROOTSYS}/bin/root-config --libs)
+DEPENDPATH  += $$system(${ROOTSYS}/bin/root-config --libs)
+LIBS        += $$system(${ROOTSYS}/bin/root-config --libs)
+LIBS        += $$system(${ROOTSYS}/bin/root-config --glibs)
+
+TARGET = ../Scripts/entanglement
+
+SOURCES += main.cpp \
+    analysis.cpp \
+    entangled.cpp\
+
+HEADERS += \
+    analysis.h \
+    entangled.h\
