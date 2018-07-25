@@ -53,6 +53,7 @@ void Entangled::Init(TString file, TString tree, UInt_t maxEntries)
 
     std::cout << "Reading tree" << std::endl;
     fileRoot_   = new TFile(inputName_, "READ");
+    std::cout << "Getting tree" << std::endl;
     rawTree_ = (TTree *) fileRoot_->Get(tree);
     std::cout << " - setting branches" << std::endl;
     rawTree_->SetBranchAddress("Size", &Size_);

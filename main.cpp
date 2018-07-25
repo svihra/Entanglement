@@ -50,14 +50,15 @@ int main(int argc, char **argv)
             break;
         }
     }
-    TApplication theApp("App",&argc,argv);
-
     if (bash)
         new Entangled(file, tree, maxEntries);
     else
-        new Analysis();
+    {
+        TApplication theApp("App",&argc,argv);
 
-    theApp.Run();
+        new Analysis();
+        theApp.Run();
+    }
     time.Stop();
     time.Print();
     return 0;
