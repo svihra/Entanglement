@@ -258,17 +258,8 @@ void Entangled::ScanEntry(Int_t &entry)
     }
 }
 
-void Entangled::Process()
+void Entangled::PrintCsv()
 {
-    outputRoot_->cd();
-
-    for (Int_t entry = 0; entry < Entries_; entry++)
-    {
-        if (maxEntries_ != 0 && entry >= maxEntries_)
-            break;
-        ScanEntry(entry);
-    }
-
     outputRoot_->cd();
     for (Int_t x1 = 0; x1 < X1_CUT; x1++)
     {
@@ -362,4 +353,18 @@ void Entangled::Process()
         }
     }
     outputRoot_->Write();
+}
+
+void Entangled::Process()
+{
+    outputRoot_->cd();
+
+    for (Int_t entry = 0; entry < Entries_; entry++)
+    {
+        if (maxEntries_ != 0 && entry >= maxEntries_)
+            break;
+        ScanEntry(entry);
+    }
+
+    PrintCsv();
 }

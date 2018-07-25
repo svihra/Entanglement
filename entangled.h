@@ -48,6 +48,7 @@ private:
     Bool_t PositionCheck(UInt_t area[4]);
     UInt_t FindPairs(UInt_t area[4], Int_t &entry);
     void ScanEntry(Int_t &entry);
+    void PrintCsv();
 
 private:
     TString inputName_, outputName_;
