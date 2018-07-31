@@ -1,8 +1,9 @@
 #include <iostream>
-#include "analysis.h"
-#include "entangled.h"
 #include <TApplication.h>
 #include <TStopwatch.h>
+
+#include "analysis.h"
+#include "entangled.h"
 
 using namespace std;
 
