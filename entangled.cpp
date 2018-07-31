@@ -274,9 +274,9 @@ void Entangled::PrintCsv()
                     TString pdfName = outputName_;
 
                     csvName.Remove(csvName.Last('.'),200);
-                    csvName.Append(".csv");
+                    csvName.Append(Form("_%dx%d_%dx%d.csv",x1,y1,x2,y2));
                     pdfName.Remove(csvName.Last('.'),200);
-                    pdfName.Append(".pdf");
+                    pdfName.Append(Form("_%dx%d_%dx%d.pdf",x1,y1,x2,y2));
 
                     TCanvas* canvas = new TCanvas(Form("canvas_%dx%d_%dx%d",x1,y1,x2,y2), Form("canvas_%dx%d_%dx%d",x1,y1,x2,y2), 400, 400);
                     std::ofstream csvFile;
