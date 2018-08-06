@@ -87,10 +87,11 @@ Analysis::Analysis()
             if (inputFiles_[file].EndsWith(".root"))
             {
                 std::cout << "Starting Init: " << std::endl;
-                Init(inputFiles_[file]);
-    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
-                Processing();
-    //            Entanglement();
+                Comparison(inputFiles_[file]);
+//                Init(inputFiles_[file]);
+//    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
+//                Processing();
+//    //            Entanglement();
             }
             else
             {
@@ -128,6 +129,61 @@ void Analysis::Init(TString file)
     outputName_ = fileName_;
     outputName_.ReplaceAll(".root","_processed.root");
     outputRoot_ = new TFile(outputName_,"RECREATE");
+}
+
+void Analysis::Comparison(TString file)
+{
+    UInt_t area1[4] = {X1_LOW, X1_HIGH, Y1_LOW, Y1_HIGH};
+    UInt_t area2[4] = {X2_LOW, X2_HIGH, Y2_LOW, Y2_HIGH};
+
+    std::cout << "Reading tree" << std::endl;
+    fileRoot_   = new TFile(file, "UPDATE");
+    rawTree_  = (TTree *) fileRoot_->Get("rawtree");
+    procTree_ = (TTree *) fileRoot_->Get("proctree");
+    std::cout << " - setting branches" << std::endl;
+    rawTree_->SetBranchAddress("Size", &Size_);
+    rawTree_->SetBranchAddress("Col",  Cols_);
+    rawTree_->SetBranchAddress("Row",  Rows_);
+    rawTree_->SetBranchAddress("ToT",  ToTs_);
+    rawTree_->SetBranchAddress("ToA",  ToAs_);
+    procTree_->SetBranchAddress("Size", &Size2_);
+    procTree_->SetBranchAddress("Col",  Cols2_);
+    procTree_->SetBranchAddress("Row",  Rows2_);
+    procTree_->SetBranchAddress("ToT",  ToTs2_);
+    procTree_->SetBranchAddress("ToA",  ToAs2_);
+
+    Entries_ = rawTree_->GetEntries();
+
+    fileRoot_->cd();
+    TH1F* subtract    = new TH1F("subtract", "subtract", 301, 1000 -157.03125, 1000 + 157.03125);
+    TH2F* subtractMap = new TH2F("subtractMap", "subtractMap", 301, 1000 - 157.03125, 1000+ 157.03125, 400,0,10000);
+
+    Float_t dToA;
+    for (int i = 0; i < Entries_; i++)
+    {
+        if (i % 100000 == 0)
+        {
+            std::cout << i << " out of " << Entries_ << std::endl;
+        }
+
+        rawTree_->GetEntry(i);
+        procTree_->GetEntry(i);
+
+        if (PositionCheck(Cols_[0], Rows_[0], area1, ToTs_[0], Size_) || PositionCheck(Cols_[0], Rows_[0], area2, ToTs_[0], Size_))
+        {
+            if (ToAs_[0] >= ToAs2_[0])
+                dToA = ((Float_t) (ToAs_[0] - ToAs2_[0]) * (25.0/4096));
+            else
+                dToA = ((Float_t) (ToAs2_[0] - ToAs_[0]) * (25.0/4096));
+
+            subtract->Fill(dToA);
+            subtractMap->Fill(dToA,ToTs_[0]);
+        }
+    }
+
+    subtract->Write();
+    subtractMap->Write();
+    fileRoot_->Write();
 }
 
 Bool_t Analysis::PositionCheck(UInt_t &x, UInt_t &y,  UInt_t area[4], UInt_t tot, UInt_t size)

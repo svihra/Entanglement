@@ -37,6 +37,7 @@ public:
     void Correlation();
     void Mapper();
     void TimeScan();
+    void Comparison(TString file);
 
 private:
     void Init(TString file = "/home/svihra/Documents/Timepix3/Data_Acquired/ENT/ent_THL230_gain00_polA000B000_60s_W0028_H11-171114-175414-1.root");
@@ -56,6 +57,7 @@ private:
 
     TFile* fileRoot_;
     TTree* rawTree_;
+    TTree* procTree_;
 
     TFile* outputRoot_;
 

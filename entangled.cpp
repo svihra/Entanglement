@@ -157,20 +157,20 @@ UInt_t Entangled::FindPairs(UInt_t area[4], Int_t &entry)
         rawTree_->GetEntry(pair);
         if (pair == entry)
         {
-            bSmaller = kFALSE;
+//            bSmaller = kFALSE;
             continue;
         }
 
         // area of incoming photons
         if ( PositionCheck(area) )
         {
-            if ( bSmaller && (ToAs2_[0] - ToAs_[0]) < diffToA )
+            if ( ToAs2_[0] > ToAs_[0] && (ToAs2_[0] - ToAs_[0]) < diffToA )
             {
                 diffToA = ToAs2_[0] - ToAs_[0];
                 nextEntry = pair;
                 bFound = kTRUE;
             }
-            else if ( !bSmaller && (ToAs_[0] - ToAs2_[0]) < diffToA )
+            else if ( ToAs2_[0] < ToAs_[0] && (ToAs_[0] - ToAs2_[0]) < diffToA )
             {
                 diffToA = ToAs_[0] - ToAs2_[0];
                 nextEntry = pair;
