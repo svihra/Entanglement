@@ -29,10 +29,10 @@
 #define Y2_LOW   168
 #define Y2_HIGH  (Y2_LOW + Y2_SIZE)
 
-#define X1_CUT  1
-#define Y1_CUT  1
-#define X2_CUT  1
-#define Y2_CUT  1
+#define X1_CUT  3
+#define Y1_CUT  3
+#define X2_CUT  3
+#define Y2_CUT  3
 
 
 class Entangled
@@ -61,6 +61,7 @@ private:
     TFile* outputRoot_;
     TDirectory* combinationDir_[X1_CUT][Y1_CUT][X2_CUT][Y2_CUT];
     TTree* entTree_[X1_CUT][Y1_CUT][X2_CUT][Y2_CUT];
+    TTree* entTreeAll_;
 
     UInt_t      id_;
     UInt_t      mainEntry_;

@@ -9,6 +9,11 @@
 #include "TString.h"
 #include <TFile.h>
 #include <TCanvas.h>
+#include <TF1.h>
+#include <TGraph.h>
+#include <TGraphErrors.h>
+#include <TGaxis.h>
+#include <TLegend.h>
 
 #include <TTree.h>
 #include <TH1.h>
@@ -76,34 +81,36 @@ Analysis::Analysis()
 
 //    Randomizer();
 
-    if (!Browse())
-    {
-        std::cout << "Failed to load data" << std::endl;
-    }
-    else
-    {
-        for (Int_t file = 0; file < numberOfFiles_; file++)
-        {
-            if (inputFiles_[file].EndsWith(".root"))
-            {
-                std::cout << "Starting Init: " << std::endl;
-                Comparison(inputFiles_[file]);
-//                Init(inputFiles_[file]);
-//    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
-//                Processing();
-//    //            Entanglement();
-            }
-            else
-            {
-                std::cout << "Invalid file name: " << inputFiles_[file] << std::endl;
-            }
-        }
+    Fitter();
+    fileRoot_->Close();
+//    if (!Browse())
+//    {
+//        std::cout << "Failed to load data" << std::endl;
+//    }
+//    else
+//    {
+//        for (Int_t file = 0; file < numberOfFiles_; file++)
+//        {
+//            if (inputFiles_[file].EndsWith(".root"))
+//            {
+//                std::cout << "Starting Init: " << std::endl;
+////                Comparison(inputFiles_[file]);
+////                Init(inputFiles_[file]);
+////    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
+////                Processing();
+////    //            Entanglement();
+//            }
+//            else
+//            {
+//                std::cout << "Invalid file name: " << inputFiles_[file] << std::endl;
+//            }
+//        }
 
-        fileRoot_->Close();
-    //    Mapper();
-    //    Correlation();
+//        fileRoot_->Close();
+//    //    Mapper();
+//    //    Correlation();
 
-    }
+//    }
 }
 
 void Analysis::Init(TString file)
@@ -129,6 +136,229 @@ void Analysis::Init(TString file)
     outputName_ = fileName_;
     outputName_.ReplaceAll(".root","_processed.root");
     outputRoot_ = new TFile(outputName_,"RECREATE");
+}
+
+void Analysis::Fitter(TString file)
+{
+    fileRoot_   = new TFile(file, "UPDATE");
+    TDirectory* dir = fileRoot_->GetDirectory("entry_0x0_0x0");
+
+    TFile* oldRoot = new TFile("/home/svihra/Data/TPX3/ENT/laser/PolA000PolB000_DiodeCurrent_35,2mAW0028_H11-180711-164524-1_rawtree_processed.root","READ");
+    TDirectory* ddir = oldRoot->GetDirectory("entry_0x0_0x0");
+
+    TString ltFile = file;
+    ltFile.Replace(ltFile.Last('/'),200,"/LT.csv");
+
+    TCanvas* can = new TCanvas("can","",800,800);
+    can->cd();
+
+    TTree* tmpTree = (TTree * ) dir->Get("entTree");
+    TTree* ttmpTree = (TTree * ) ddir->Get("entTree");
+
+    Float_t x_min, x_max;
+    Float_t y_min, y_max;
+    x_min = -12.5;
+    x_max = 2512.5;
+    y_min = 0;
+    y_max = 1;
+    tmpTree->Draw("ToT[0]>>tot1(101,-12.5,2512.5)","ID==0","goff");
+    tmpTree->Draw("ToT2[0]>>tot2(101,-12.5,2512.5)","ID==0","goff");
+
+    // sigma fit values
+    Int_t sig_entries = 100;
+    Float_t x[sig_entries];
+    Float_t xerr[sig_entries];
+    Float_t y[sig_entries];
+    Float_t yerr[sig_entries];
+
+    Float_t yO[sig_entries];
+    Float_t yerrO[sig_entries];
+
+    // new
+    for (int i = 1; i <= sig_entries; i++)
+    {
+        x[i] = i*25;
+        xerr[i] = 12.5;
+        TF1* func = new TF1("fit","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2)) + [4]*exp(-0.5*pow((x-[5])/[6],2))");
+        TF1* bcg  = new TF1("bcg","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2))");
+        bcg->SetRange(-150,150);
+        func->SetParLimits(0,0,100);
+        func->SetParLimits(1,0,1e4);
+        func->SetParLimits(2,-5,15);
+        func->SetParLimits(3,5,100);
+        func->SetParLimits(4,0,1e9);
+        func->SetParLimits(5,-5,15);
+        func->SetParLimits(6,1,10);
+        func->SetParameters(5,10,8,70,20000/(i+2),3,3);
+        TString range, name, result;
+        range.Form("ID==0 && ToT[0] >= %d && ToT2[0] >= %d",(int) x[i], (int) x[i]);
+        name.Form("((ToA[0]-ToA2[0])*25/4096)>>coin%d(65,-50-0.78125,50+0.78125)",(int) i);
+        int count = tmpTree->Draw(name,range,"");
+        result.Form("coin%d",(int) i);
+
+        TH1D *coin = (TH1D*) gDirectory->Get(result);
+        if (count > 200)
+        {
+            coin->Fit(func);
+
+            y[i] = func->GetParameter(6);
+            yerr[i] = func->GetParError(6);
+
+            bcg->SetParameter(0, func->GetParameter(0));
+            bcg->SetParameter(1, func->GetParameter(1));
+            bcg->SetParameter(2, func->GetParameter(2));
+            bcg->SetParameter(3, func->GetParameter(3));
+            bcg->Draw("same");
+
+            if (y[i] == 2)
+            {
+                y[i] = 0;
+                yerr[i] = 0;
+            }
+        }
+        else
+        {
+            y[i] = 0;
+            yerr[i] = 0;
+        }
+        TString ttt = file;
+        ttt.Replace(ttt.Last('/'),300,"/fits/"+result+".png");
+        can->Print(ttt);
+        delete func;
+        delete bcg;
+    }
+
+    // old
+    for (int i = 1; i <= sig_entries; i++)
+    {
+        TF1* func = new TF1("fit","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2)) + [4]*exp(-0.5*pow((x-[5])/[6],2))");
+        TF1* bcg  = new TF1("bcg","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2))");
+        bcg->SetRange(-150,150);
+        func->SetParLimits(0,0,200);
+        func->SetParLimits(1,0,1e4);
+        func->SetParLimits(2,0,15);
+        func->SetParLimits(3,6,200);
+        func->SetParLimits(4,0,1e9);
+        func->SetParLimits(5,-20,30);
+        func->SetParLimits(6,2,20);
+        func->SetParameters(20,150,8,100,6000/(0.75*i),5,7);
+        TString range, name, result;
+        range.Form("ID==0 && ToT[0] >= %d && ToT2[0] >= %d",(int) x[i], (int) x[i]);
+        name.Form("((ToA[0]-ToA2[0])*25/4096)>>coin%d(201,-156.25-0.78125,156.25+0.78125)",(int) i);
+        int count = ttmpTree->Draw(name,range,"");
+        result.Form("coin%d",(int) i);
+
+        TH1D *coin = (TH1D*) gDirectory->Get(result);
+        if (count > 200)
+        {
+            coin->Fit(func);
+
+            yO[i] = func->GetParameter(6);
+            yerrO[i] = func->GetParError(6);
+
+            bcg->SetParameter(0, func->GetParameter(0));
+            bcg->SetParameter(1, func->GetParameter(1));
+            bcg->SetParameter(2, func->GetParameter(2));
+            bcg->SetParameter(3, func->GetParameter(3));
+            bcg->Draw("same");
+
+            if (y[i] == 2)
+            {
+                yO[i] = 0;
+                yerrO[i] = 0;
+            }
+        }
+        else
+        {
+            yO[i] = 0;
+            yerrO[i] = 0;
+        }
+        TString ttt = file;
+        ttt.Replace(ttt.Last('/'),300,"/fits/old_"+result+".png");
+        can->Print(ttt);
+        delete func;
+        delete bcg;
+    }
+
+    // first ToT dist
+    TH1D *tot1 = (TH1D*) gDirectory->Get("tot1");
+    tot1->SetTitle("");
+    tot1->SetStats(kFALSE);
+    y_max = tot1->GetMaximum()*1.1;
+    tot1->GetXaxis()->SetTitle("ToT [ns]");
+    tot1->GetYaxis()->SetTitle("entries [a.u.]");
+    tot1->GetYaxis()->SetTitleOffset(1.55);
+    tot1->GetYaxis()->SetRangeUser(y_min, y_max);
+    gPad->SetLeftMargin(0.13);
+    gPad->SetRightMargin(0.20);
+    tot1->Draw();
+
+    // second ToT dist
+    TH1D *tot2 = (TH1D*) gDirectory->Get("tot2");
+    tot2->SetLineColor(kBlack);
+    tot2->SetTitle("");
+    tot2->SetStats(kFALSE);
+    tot2->Draw("same");
+
+    // LT table data
+    TGraph* graph = new TGraph(ltFile);
+    graph->SetTitle("");
+
+    Float_t rightmax = 1.1*120;
+    Float_t scale = y_max/rightmax;
+    for (int i=0;i<graph->GetN();i++) graph->GetY()[i] *= -1000*scale;
+    graph->SetLineColor(kRed);
+    graph->SetMarkerColor(kRed);
+    graph->Draw("same*");
+
+    TGaxis *axis = new TGaxis(x_max,0, x_max, y_max,0,rightmax,510,"+L");
+    axis->SetTitle("dToA [ns]");
+    axis->SetTextFont(1);
+    axis->SetLineColor(kRed);
+    axis->SetLabelColor(kRed);
+    axis->Draw();
+
+
+    Float_t rightmax_sig = 1.1*12;
+    Float_t scale_sig = y_max/rightmax_sig;
+    for (int i=0;i<sig_entries;i++) {y[i] *= scale_sig; yerr[i] *= scale_sig;}
+
+    TGraph* sigma = new TGraphErrors(sig_entries,x,y,xerr,yerr);
+    sigma->SetLineColor(kGreen+3);
+    sigma->SetMarkerColor(kGreen+3);
+    sigma->SetFillColor(kGreen+3);
+    sigma->SetFillStyle(3010);
+    sigma->Draw("samep");
+
+    for (int i=0;i<sig_entries;i++) {yO[i] *= scale_sig; yerrO[i] *= scale_sig;}
+
+    TGraph* sigmaO = new TGraphErrors(sig_entries,x,yO,xerr,yerrO);
+    sigmaO->SetLineColor(kSpring);
+    sigmaO->SetMarkerColor(kSpring);
+    sigmaO->SetFillColor(kSpring);
+    sigmaO->SetFillStyle(3010);
+    sigmaO->Draw("samep");
+
+
+    TGaxis *axis_sig = new TGaxis(1.15*x_max, 0, 1.15*x_max, y_max, 0, rightmax_sig,510,"+L");
+    axis_sig->SetTitle("sigma [ns]");
+    axis_sig->SetTextFont(1);
+    axis_sig->SetLineColor(kGreen+3);
+    axis_sig->SetLabelColor(kGreen+3);
+    axis_sig->Draw();
+
+    TLegend* legend = new TLegend(0.5, 0.65, 0.75, 0.85);
+    legend->AddEntry(tot1  , "ToT1 distribution", "l");
+    legend->AddEntry(tot2  , "ToT2 distribution", "l");
+    legend->AddEntry(graph , "ToT correction"   , "l");
+    legend->AddEntry(sigmaO, "#sigma entries raw"   , "l");
+    legend->AddEntry(sigma , "#sigma entries corr"   , "l");
+    legend->Draw("same");
+
+    // saving file
+    TString tmpFile = file;
+    tmpFile.Replace(tmpFile.Last('.'),200,"_plot.png");
+    can->Print(tmpFile);
 }
 
 void Analysis::Comparison(TString file)

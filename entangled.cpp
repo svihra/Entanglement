@@ -134,6 +134,21 @@ void Entangled::Init(TString file, TString tree, UInt_t maxEntries)
             }
         }
     }
+    outputRoot_->cd();
+    entTreeAll_ = new TTree("entTree","entangled data for sections");
+    entTreeAll_->Branch("ID"   ,       &id_,"ID/i");
+    entTreeAll_->Branch("mE"   ,&mainEntry_,"mE/i");
+    entTreeAll_->Branch("nE"   ,&nextEntry_,"nE/i");
+    entTreeAll_->Branch("Size" ,     &Size_,"Size/i");
+    entTreeAll_->Branch("Col"  ,      Cols_,"Col[Size]/i");
+    entTreeAll_->Branch("Row"  ,      Rows_,"Row[Size]/i");
+    entTreeAll_->Branch("ToT"  ,      ToTs_,"ToT[Size]/i");
+    entTreeAll_->Branch("ToA"  ,      ToAs_,"ToA[Size]/l");
+    entTreeAll_->Branch("Size2",    &Size2_,"Size2/i");
+    entTreeAll_->Branch("Col2" ,     Cols2_,"Col2[Size2]/i");
+    entTreeAll_->Branch("Row2" ,     Rows2_,"Row2[Size2]/i");
+    entTreeAll_->Branch("ToT2" ,     ToTs2_,"ToT2[Size2]/i");
+    entTreeAll_->Branch("ToA2" ,     ToAs2_,"ToA2[Size2]/l");
 }
 
 Bool_t Entangled::PositionCheck(UInt_t area[4])
@@ -225,6 +240,14 @@ void Entangled::ScanEntry(Int_t &entry)
                 }
             }
 
+            nextEntry_ = FindPairs(area2All_,entry);
+            if (nextEntry_ != 0)
+            {
+                id_ = 0;
+                rawTree_->GetEntry(nextEntry_);
+                entTreeAll_->Fill();
+            }
+
             for (Int_t x1 = 0; x1 < X1_CUT; x1++)
             {
                 for (Int_t y1 = 0; y1 < Y1_CUT; y1++)
@@ -238,6 +261,15 @@ void Entangled::ScanEntry(Int_t &entry)
                     }
                 }
             }
+
+            nextEntry_ = FindPairs(area1All_,entry);
+            if (nextEntry_ != 0)
+            {
+                id_ = 1;
+                rawTree_->GetEntry(nextEntry_);
+                entTreeAll_->Fill();
+            }
+
         }
         else
         {
@@ -253,6 +285,14 @@ void Entangled::ScanEntry(Int_t &entry)
                         entTree_[globalX2][globalY2][x2][y2]->Fill();
                     }
                 }
+            }
+
+            nextEntry_ = FindPairs(area2All_,entry);
+            if (nextEntry_ != 0)
+            {
+                id_ = 2;
+                rawTree_->GetEntry(nextEntry_);
+                entTreeAll_->Fill();
             }
 
         }
@@ -353,6 +393,71 @@ void Entangled::PrintCsv()
             }
         }
     }
+
+    // general for whole areas
+    TH1F* ent = new TH1F("histEnt", "Entangled", 1 + ((2.0*MAX_DIFF)/1.5625), -MAX_DIFF-0.78125, MAX_DIFF+0.78125);
+    TH1F* single1 = new TH1F("histSingle1", "Fiber 1", 1 + ((2.0*MAX_DIFF)/1.5625), -MAX_DIFF-0.78125, MAX_DIFF+0.78125);
+    TH1F* single2 = new TH1F("histSingle2", "Fiber 2", 1 + ((2.0*MAX_DIFF)/1.5625), -MAX_DIFF-0.78125, MAX_DIFF+0.78125);
+
+    for (Int_t entry = 0; entry < entTreeAll_->GetEntries(); entry++)
+    {
+        Float_t dToA;
+        Bool_t bSign;
+
+        entTreeAll_->GetEntry(entry);
+        if (entry % 1000 == 0)
+        {
+            std::cout << "Entangled entry All: " << entry << std::endl;
+        }
+
+        if (ToAs2_[0] > ToAs_[0])
+        {
+            dToA = (Float_t) (ToAs2_[0] - ToAs_[0]);
+            bSign = kTRUE;
+        }
+        else
+        {
+            dToA = (Float_t) (ToAs_[0] - ToAs2_[0]);
+            bSign = kFALSE;
+        }
+
+        dToA *= 25.0/4096;
+
+        if (id_ == 0)
+        {
+            if (bSign)
+                ent->Fill(dToA);
+            else
+                ent->Fill(-dToA);
+        }
+        else if (id_ == 1)
+        {
+            if (bSign)
+                single1->Fill(dToA);
+        }
+        else if (id_ == 2)
+        {
+            if (!bSign)
+                single2->Fill(-dToA);
+        }
+    }
+
+    TString csvName = outputName_;
+    csvName.Remove(csvName.Last('.'),200);
+    csvName.Append(".csv");
+    std::ofstream csvFile;
+    csvFile.open(csvName);
+    for (Int_t bin = 1; bin <= ent->GetNbinsX(); bin++)
+    {
+        if (bin < ent->GetNbinsX()/2)
+            csvFile << ent->GetBinCenter(bin) << "," << ent->GetBinContent(bin) << "," << single2->GetBinContent(bin) << "\n";
+        else if (bin > 1 + ent->GetNbinsX()/2)
+            csvFile << ent->GetBinCenter(bin) << "," << ent->GetBinContent(bin) << "," << single1->GetBinContent(bin) << "\n";
+        else
+            csvFile << ent->GetBinCenter(bin) << "," << ent->GetBinContent(bin) << "," << (single1->GetBinContent(bin)+single2->GetBinContent(bin)) << "\n";
+    }
+    csvFile.close();
+
     outputRoot_->Write();
 }
 

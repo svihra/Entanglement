@@ -38,6 +38,7 @@ public:
     void Mapper();
     void TimeScan();
     void Comparison(TString file);
+    void Fitter(TString file = "/home/svihra/Data/TPX3/ENT/laser/PolA000PolB000_DiodeCurrent_35,2mAW0028_H11-180711-164524-1_proctree_processed.root");
 
 private:
     void Init(TString file = "/home/svihra/Documents/Timepix3/Data_Acquired/ENT/ent_THL230_gain00_polA000B000_60s_W0028_H11-171114-175414-1.root");
