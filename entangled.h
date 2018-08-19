@@ -39,7 +39,7 @@ class Entangled
 public:
     Entangled(TString fileName, TString tree = "rawtree", UInt_t maxEntries = 0, Int_t startEntryPart = -1, Int_t parts = 25);
     ~Entangled();
-    void Process(Int_t startEntryPart, Int_t parts);
+    void Process();
 
 private:
     void Init(TString file, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts);
@@ -79,6 +79,8 @@ private:
     UInt_t      ToTs2_[MAX_HITS];
 
     Int_t       Entries_;
+    Int_t       Part_;
+    Int_t       Parts_;
 
     TString     inputFiles_[MAX_FILES];
     TString     inputDir_;

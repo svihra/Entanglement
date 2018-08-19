@@ -16,7 +16,7 @@ Entangled::Entangled(TString fileName, TString tree, UInt_t maxEntries, Int_t st
         Init(fileName, tree, maxEntries, startEntryPart, parts);
 
         std::cout << "Starting entanglement processing: " << std::endl;
-        Process(startEntryPart, parts);
+        Process();
         outputRoot_->Close();
     }
     else
@@ -67,14 +67,16 @@ void Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t startE
     std::cout << "Create writing file" << std::endl;
     outputName_ = inputName_;
 
-    if (startEntryPart == -1)
+    Part_ = startEntryPart;
+    Parts_ = parts;
+    if (Part_ == -1)
     {
         outputName_.ReplaceAll(".root","_"+tree+"_processed.root");
     }
     else
     {
         TString tmpOutput;
-        tmpOutput.Form("_%d_%d_processed.root", startEntryPart, parts-1);
+        tmpOutput.Form("_%d_%d_processed.root", Part_, Parts_-1);
         outputName_.ReplaceAll(".root",tmpOutput);
     }
     outputRoot_ = new TFile(outputName_,"RECREATE");
@@ -324,12 +326,10 @@ void Entangled::PrintCsv()
 
                     csvName.Remove(csvName.Last('.'),200);
                     csvName.Append(Form("_%dx%d_%dx%d.csv",x1,y1,x2,y2));
-                    pdfName.Remove(csvName.Last('.'),200);
+                    pdfName.Remove(pdfName.Last('.'),200);
                     pdfName.Append(Form("_%dx%d_%dx%d.pdf",x1,y1,x2,y2));
 
                     TCanvas* canvas = new TCanvas(Form("canvas_%dx%d_%dx%d",x1,y1,x2,y2), Form("canvas_%dx%d_%dx%d",x1,y1,x2,y2), 400, 400);
-                    std::ofstream csvFile;
-                    csvFile.open(csvName);
 
                     TH1F* ent = new TH1F(Form("histEnt_%dx%d_%dx%d",x1,y1,x2,y2), Form("Entangled %dx%d_%dx%d",x1,y1,x2,y2), 1 + ((2.0*MAX_DIFF)/1.5625), -MAX_DIFF-0.78125, MAX_DIFF+0.78125);
                     TH1F* single1 = new TH1F(Form("histSingle1_%dx%d_%dx%d",x1,y1,x2,y2), Form("Fiber 1 %dx%d_%dx%d",x1,y1,x2,y2), 1 + ((2.0*MAX_DIFF)/1.5625), -MAX_DIFF-0.78125, MAX_DIFF+0.78125);
@@ -387,6 +387,9 @@ void Entangled::PrintCsv()
 
                     canvas->Print(pdfName);
                     canvas->Close();
+
+                    std::ofstream csvFile;
+                    csvFile.open(csvName);
 
                     for (Int_t bin = 1; bin <= ent->GetNbinsX(); bin++)
                     {
@@ -470,20 +473,20 @@ void Entangled::PrintCsv()
     outputRoot_->Write();
 }
 
-void Entangled::Process(Int_t startEntryPart, Int_t parts)
+void Entangled::Process()
 {
     outputRoot_->cd();
 
     Int_t startEntry = 0;
     Int_t endEntry = Entries_;
 
-    if (startEntryPart != -1)
+    if (Part_ != -1)
     {
-        startEntry = (Int_t) ((((Double_t) startEntryPart)/parts)*Entries_);
-        endEntry = (Int_t) ((((Double_t) (startEntryPart+1))/parts)*Entries_);
+        startEntry = (Int_t) ((((Double_t) Part_)/Parts_)*Entries_);
+        endEntry = (Int_t) ((((Double_t) (Part_+1))/Parts_)*Entries_);
     }
 
-    std::cout << "Part: " << startEntryPart << " Starting at: " << startEntry << ", finishing at: " << endEntry << std::endl;
+    std::cout << "Part: " << Part_ << " Starting at: " << startEntry << ", finishing at: " << endEntry << std::endl;
 
     for (Int_t entry = startEntry; entry < endEntry; entry++)
     {
@@ -492,6 +495,5 @@ void Entangled::Process(Int_t startEntryPart, Int_t parts)
         ScanEntry(entry);
     }
 
-    if (startEntryPart == -1)
-        PrintCsv();
+    PrintCsv();
 }
