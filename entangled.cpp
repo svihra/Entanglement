@@ -8,15 +8,15 @@
 #include <TH1.h>
 #include <TCanvas.h>
 
-Entangled::Entangled(TString fileName, TString tree, UInt_t maxEntries)
+Entangled::Entangled(TString fileName, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts)
 {
     if (fileName.EndsWith(".root") && !fileName.EndsWith("_processed.root"))
     {
         std::cout << "Starting init: " << std::endl;
-        Init(fileName, tree, maxEntries);
+        Init(fileName, tree, maxEntries, startEntryPart, parts);
 
         std::cout << "Starting entanglement processing: " << std::endl;
-        Process();
+        Process(startEntryPart, parts);
         outputRoot_->Close();
     }
     else
@@ -43,7 +43,7 @@ Entangled::~Entangled()
     }
 }
 
-void Entangled::Init(TString file, TString tree, UInt_t maxEntries)
+void Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts)
 {
     std::cout << "Setting max entries as " << maxEntries << std::endl;
     maxEntries_ = maxEntries;
@@ -66,7 +66,17 @@ void Entangled::Init(TString file, TString tree, UInt_t maxEntries)
 
     std::cout << "Create writing file" << std::endl;
     outputName_ = inputName_;
-    outputName_.ReplaceAll(".root","_"+tree+"_processed.root");
+
+    if (startEntryPart == -1)
+    {
+        outputName_.ReplaceAll(".root","_"+tree+"_processed.root");
+    }
+    else
+    {
+        TString tmpOutput;
+        tmpOutput.Form("_%d_%d_processed.root", startEntryPart, parts-1);
+        outputName_.ReplaceAll(".root",tmpOutput);
+    }
     outputRoot_ = new TFile(outputName_,"RECREATE");
 
     id_         = 0;
@@ -163,7 +173,6 @@ UInt_t Entangled::FindPairs(UInt_t area[4], Int_t &entry)
 {
     ULong64_t diffToA = (ULong64_t) (163.84 * MAX_DIFF);
     Bool_t bFound   = kFALSE;
-    Bool_t bSmaller = kTRUE;
     UInt_t nextEntry;
 
     // find pairs
@@ -461,16 +470,28 @@ void Entangled::PrintCsv()
     outputRoot_->Write();
 }
 
-void Entangled::Process()
+void Entangled::Process(Int_t startEntryPart, Int_t parts)
 {
     outputRoot_->cd();
 
-    for (Int_t entry = 0; entry < Entries_; entry++)
+    Int_t startEntry = 0;
+    Int_t endEntry = Entries_;
+
+    if (startEntryPart != -1)
+    {
+        startEntry = (Int_t) ((((Double_t) startEntryPart)/parts)*Entries_);
+        endEntry = (Int_t) ((((Double_t) (startEntryPart+1))/parts)*Entries_);
+    }
+
+    std::cout << "Part: " << startEntryPart << " Starting at: " << startEntry << ", finishing at: " << endEntry << std::endl;
+
+    for (Int_t entry = startEntry; entry < endEntry; entry++)
     {
         if (maxEntries_ != 0 && entry >= maxEntries_)
             break;
         ScanEntry(entry);
     }
 
-    PrintCsv();
+    if (startEntryPart == -1)
+        PrintCsv();
 }

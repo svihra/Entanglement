@@ -5,6 +5,8 @@
 #include <TStopwatch.h>
 #include <TFile.h>
 #include <TTree.h>
+#include <TCanvas.h>
+#include <TColor.h>
 
 #include <TGFrame.h>
 
@@ -38,11 +40,14 @@ public:
     void Mapper();
     void TimeScan();
     void Comparison(TString file);
+    void Spatial(TString file = "/home/svihra/Data/TPX3/ENT/long/spatial.txt");
     void Fitter(TString file = "/home/svihra/Data/TPX3/ENT/laser/PolA000PolB000_DiodeCurrent_35,2mAW0028_H11-180711-164524-1_proctree_processed.root");
+    void Plotter(TString file, Int_t index);
 
 private:
     void Init(TString file = "/home/svihra/Documents/Timepix3/Data_Acquired/ENT/ent_THL230_gain00_polA000B000_60s_W0028_H11-171114-175414-1.root");
     bool Browse();
+    Int_t Degrees(int x, int y);
     Bool_t PositionCheck(UInt_t &x, UInt_t &xLow, UInt_t &xHigh, UInt_t &y, UInt_t &yLow, UInt_t &yHigh, UInt_t tot = 0, UInt_t size = 0);
     Bool_t PositionCheck(UInt_t &x, UInt_t &y,  UInt_t area[4], UInt_t tot, UInt_t size);
     UInt_t FindPairs(UInt_t area[4], Int_t &entry, data &fiber);
@@ -62,6 +67,9 @@ private:
 
     TFile* outputRoot_;
 
+    TCanvas* can_;
+    TLegend* leg_;
+    Int_t colors_[4] = {kAzure+2, kOrange+1, kRed+1, kGreen+3 };
 
     UInt_t      Size_;
     UInt_t      Cols_[MAX_HITS];

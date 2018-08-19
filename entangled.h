@@ -34,16 +34,15 @@
 #define X2_CUT  3
 #define Y2_CUT  3
 
-
 class Entangled
 {
 public:
-    Entangled(TString fileName, TString tree = "rawtree", UInt_t maxEntries = 0);
+    Entangled(TString fileName, TString tree = "rawtree", UInt_t maxEntries = 0, Int_t startEntryPart = -1, Int_t parts = 25);
     ~Entangled();
-    void Process();
+    void Process(Int_t startEntryPart, Int_t parts);
 
 private:
-    void Init(TString file, TString tree, UInt_t maxEntries);
+    void Init(TString file, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts);
 
     Bool_t PositionCheck(UInt_t area[4]);
     UInt_t FindPairs(UInt_t area[4], Int_t &entry);

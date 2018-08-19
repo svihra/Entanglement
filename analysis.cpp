@@ -11,6 +11,7 @@
 #include <TCanvas.h>
 #include <TF1.h>
 #include <TGraph.h>
+#include <TGraph2DErrors.h>
 #include <TGraphErrors.h>
 #include <TGaxis.h>
 #include <TLegend.h>
@@ -80,7 +81,7 @@ Analysis::Analysis()
 //    TimeScan();
 
 //    Randomizer();
-
+//    Spatial();
     Fitter();
     fileRoot_->Close();
 //    if (!Browse())
@@ -89,11 +90,15 @@ Analysis::Analysis()
 //    }
 //    else
 //    {
+//        can_ = new TCanvas("can","",1200,800);
+//        leg_ = new TLegend(0.6, 0.65, 0.8, 0.82);
 //        for (Int_t file = 0; file < numberOfFiles_; file++)
 //        {
 //            if (inputFiles_[file].EndsWith(".root"))
 //            {
-//                std::cout << "Starting Init: " << std::endl;
+//                std::cout << "Plotting to single graph" << std::endl;
+//                Plotter(inputFiles_[file], file);
+////                std::cout << "Starting Init: " << std::endl;
 ////                Comparison(inputFiles_[file]);
 ////                Init(inputFiles_[file]);
 ////    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
@@ -105,7 +110,10 @@ Analysis::Analysis()
 //                std::cout << "Invalid file name: " << inputFiles_[file] << std::endl;
 //            }
 //        }
-
+//        leg_->Draw("same");
+//        TString tmpName = inputFiles_[0];
+//        tmpName.Replace(tmpName.Last('.'),200,"_overall.eps");
+//        can_->Print(tmpName);
 //        fileRoot_->Close();
 //    //    Mapper();
 //    //    Correlation();
@@ -138,8 +146,155 @@ void Analysis::Init(TString file)
     outputRoot_ = new TFile(outputName_,"RECREATE");
 }
 
+void Analysis::Plotter(TString file, Int_t index)
+{
+    fileRoot_   = new TFile(file, "READ");
+    TDirectory* dir = fileRoot_->GetDirectory("entry_0x0_0x0");
+
+    TTree* tmpTree = (TTree * ) dir->Get("entTree");
+    TCanvas* canTMP = new TCanvas("canTMP","",1200,800);
+    canTMP->cd();
+    tmpTree->Draw("(ToA[0]-ToA2[0])*25.0/4096>>toa(201,-156.25,156.25)","ID==0","goff");
+
+    TF1* func = new TF1("fit","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2)) + [4]*exp(-0.5*pow((x-[5])/[6],2))");
+
+    func->SetParLimits(0,0,400);
+    func->SetParLimits(1,0,1e4);
+    func->SetParLimits(2,-25,25);
+    func->SetParLimits(3,5,100);
+    func->SetParLimits(4,0,1e9);
+    func->SetParLimits(5,-5,15);
+    func->SetParLimits(6,1,10);
+    func->SetParameters(100,10,8,70,20000,3,3);
+
+    TH1D* hist = (TH1D*) gDirectory->Get("toa");
+    func->SetNpx(3000);
+    hist->Fit(func,"0");
+
+    can_->cd();
+    hist->SetTitle("");
+    hist->SetStats(kFALSE);
+    hist->GetXaxis()->SetTitle("dToA [ns]");
+    hist->GetXaxis()->SetRangeUser(-30,50);
+    hist->GetYaxis()->SetTitle("entries [a.u.]");
+    hist->GetYaxis()->SetTitleOffset(1.4);
+    hist->GetYaxis()->SetRangeUser(0, 6000);
+    hist->GetXaxis()->SetTitleSize(0.035);
+    hist->GetYaxis()->SetTitleSize(0.035);
+    hist->GetXaxis()->SetLabelSize(0.03);
+    hist->GetYaxis()->SetLabelSize(0.03);
+
+    hist->SetMarkerColor(colors_[index]);
+    hist->SetMarkerStyle(kFullCircle);
+    hist->SetMarkerSize(1.2);
+    func->SetLineColor(colors_[index]);
+    func->SetRange(-30,50);
+
+    TString tmpName(file(file.Last('/')+5,9));
+    tmpName.Replace(tmpName.First('_'),1,"#circ, ");
+    tmpName.Replace(tmpName.First('A'),1,"#alpha = ");
+    tmpName.Replace(tmpName.First('B'),2,"#beta = ");
+    tmpName.Append("#circ");
+    leg_->AddEntry(func,tmpName,"l");
+    hist->Draw("P same");
+    func->Draw("same");
+
+    delete canTMP;
+}
+
+Int_t Analysis::Degrees(int x, int y)
+{
+    if (x == 2)
+    {
+        if (y == 1)
+            return 0;
+        else if (y == 0)
+            return 1;
+        else if (y == 2)
+            return 7;
+    }
+    else if (x == 1)
+    {
+        if (y == 0)
+            return 2;
+        else if (y == 2)
+            return 6;
+    }
+    else if (x == 0)
+    {
+        if (y ==0)
+            return 3;
+        else if (y == 1)
+            return 4;
+        else if (y == 2)
+            return 5;
+    }
+    return -1;
+}
+
+void Analysis::Spatial(TString file)
+{
+    std::ifstream csvFile;
+    csvFile.open(file);
+    Double_t value[3][3][3][3];
+    Double_t error[3][3][3][3];
+
+    Double_t result[8][8];
+    Double_t resultErr[8][8];
+    TString info;
+
+    TH2D* hist = new TH2D("hist","",8,-22.5,337.25,8,-22.5,337.25);
+    for (int x1 = 0; x1 < 3; x1++)
+    {
+        for (int y1 = 0; y1 < 3; y1++)
+        {
+            for (int x2 = 0; x2 < 3; x2++)
+            {
+                for (int y2 = 0; y2 < 3; y2++)
+                {
+                    csvFile >> info >> value[x1][y1][x2][y2] >> error[x1][y1][x2][y2];
+                    std::cout << value[x1][y1][x2][y2] << " " <<error[x1][y1][x2][y2] << std::endl;
+                    int x = Degrees(x1,y1);
+                    int y = Degrees(x2,y2);
+                    if (x != -1 && y != -1)
+                    {
+                        hist->Fill(x*45,y*45,value[x1][y1][x2][y2]);
+                        result[x][y] = value[x1][y1][x2][y2];
+                        resultErr[x][y] = error[x1][y1][x2][y2];
+                    }
+                }
+            }
+        }
+    }
+
+    TCanvas* can = new TCanvas("can","",800,800);
+    TGraph2DErrors* graph = new TGraph2DErrors();
+    can->cd();
+    int i = 0;
+    for (int x = 0; x < 8; x++)
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            graph->SetPoint(i,x*45,y*45,result[x][y]);
+            graph->SetPointError(i,22.25,22.25,resultErr[x][y]);
+            i++;
+        }
+    }
+    graph->GetXaxis()->SetLimits(-22.25,337.25);
+    graph->GetYaxis()->SetLimits(-22.25,337.25);
+    graph->GetZaxis()->SetLimits(0,3.1);
+    hist->GetXaxis()->SetRangeUser(-22.25,337.25);
+    hist->GetYaxis()->SetRangeUser(-22.25,337.25);
+    hist->GetZaxis()->SetRangeUser(0,3.1);
+    hist->Draw("colz");
+
+    csvFile.close();
+}
+
 void Analysis::Fitter(TString file)
 {
+    std::ofstream csvFile;
+    csvFile.open(file+".csv");
     fileRoot_   = new TFile(file, "UPDATE");
     TDirectory* dir = fileRoot_->GetDirectory("entry_0x0_0x0");
 
@@ -149,8 +304,16 @@ void Analysis::Fitter(TString file)
     TString ltFile = file;
     ltFile.Replace(ltFile.Last('/'),200,"/LT.csv");
 
-    TCanvas* can = new TCanvas("can","",800,800);
+    TCanvas* can = new TCanvas("can","",1600,800);
     can->cd();
+    TPad *pad1 = new TPad("pad1", "",0.0,0.5,1.0,1.0);
+    pad1->Draw();
+    TPad *pad2 = new TPad("pad2", "",0.0,0.0,1.0,0.5);
+    pad2->Draw();
+
+    pad2->cd();
+    gPad->SetTopMargin(0);
+    gPad->SetBottomMargin(1.5);
 
     TTree* tmpTree = (TTree * ) dir->Get("entTree");
     TTree* ttmpTree = (TTree * ) ddir->Get("entTree");
@@ -158,7 +321,7 @@ void Analysis::Fitter(TString file)
     Float_t x_min, x_max;
     Float_t y_min, y_max;
     x_min = -12.5;
-    x_max = 2512.5;
+    x_max = 1512.5;
     y_min = 0;
     y_max = 1;
     tmpTree->Draw("ToT[0]>>tot1(101,-12.5,2512.5)","ID==0","goff");
@@ -228,57 +391,57 @@ void Analysis::Fitter(TString file)
         delete bcg;
     }
 
-    // old
-    for (int i = 1; i <= sig_entries; i++)
-    {
-        TF1* func = new TF1("fit","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2)) + [4]*exp(-0.5*pow((x-[5])/[6],2))");
-        TF1* bcg  = new TF1("bcg","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2))");
-        bcg->SetRange(-150,150);
-        func->SetParLimits(0,0,200);
-        func->SetParLimits(1,0,1e4);
-        func->SetParLimits(2,0,15);
-        func->SetParLimits(3,6,200);
-        func->SetParLimits(4,0,1e9);
-        func->SetParLimits(5,-20,30);
-        func->SetParLimits(6,2,20);
-        func->SetParameters(20,150,8,100,6000/(0.75*i),5,7);
-        TString range, name, result;
-        range.Form("ID==0 && ToT[0] >= %d && ToT2[0] >= %d",(int) x[i], (int) x[i]);
-        name.Form("((ToA[0]-ToA2[0])*25/4096)>>coin%d(201,-156.25-0.78125,156.25+0.78125)",(int) i);
-        int count = ttmpTree->Draw(name,range,"");
-        result.Form("coin%d",(int) i);
+//    // old
+//    for (int i = 1; i <= sig_entries; i++)
+//    {
+//        TF1* func = new TF1("fit","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2)) + [4]*exp(-0.5*pow((x-[5])/[6],2))");
+//        TF1* bcg  = new TF1("bcg","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2))");
+//        bcg->SetRange(-150,150);
+//        func->SetParLimits(0,0,200);
+//        func->SetParLimits(1,0,1e4);
+//        func->SetParLimits(2,0,15);
+//        func->SetParLimits(3,6,200);
+//        func->SetParLimits(4,0,1e9);
+//        func->SetParLimits(5,-20,30);
+//        func->SetParLimits(6,2,20);
+//        func->SetParameters(20,150,8,100,6000/(0.75*i),5,7);
+//        TString range, name, result;
+//        range.Form("ID==0 && ToT[0] >= %d && ToT2[0] >= %d",(int) x[i], (int) x[i]);
+//        name.Form("((ToA[0]-ToA2[0])*25/4096)>>coin%d(201,-156.25-0.78125,156.25+0.78125)",(int) i);
+//        int count = ttmpTree->Draw(name,range,"");
+//        result.Form("coin%d",(int) i);
 
-        TH1D *coin = (TH1D*) gDirectory->Get(result);
-        if (count > 200)
-        {
-            coin->Fit(func);
+//        TH1D *coin = (TH1D*) gDirectory->Get(result);
+//        if (count > 200)
+//        {
+//            coin->Fit(func);
 
-            yO[i] = func->GetParameter(6);
-            yerrO[i] = func->GetParError(6);
+//            yO[i] = func->GetParameter(6);
+//            yerrO[i] = func->GetParError(6);
 
-            bcg->SetParameter(0, func->GetParameter(0));
-            bcg->SetParameter(1, func->GetParameter(1));
-            bcg->SetParameter(2, func->GetParameter(2));
-            bcg->SetParameter(3, func->GetParameter(3));
-            bcg->Draw("same");
+//            bcg->SetParameter(0, func->GetParameter(0));
+//            bcg->SetParameter(1, func->GetParameter(1));
+//            bcg->SetParameter(2, func->GetParameter(2));
+//            bcg->SetParameter(3, func->GetParameter(3));
+//            bcg->Draw("same");
 
-            if (y[i] == 2)
-            {
-                yO[i] = 0;
-                yerrO[i] = 0;
-            }
-        }
-        else
-        {
-            yO[i] = 0;
-            yerrO[i] = 0;
-        }
-        TString ttt = file;
-        ttt.Replace(ttt.Last('/'),300,"/fits/old_"+result+".png");
-        can->Print(ttt);
-        delete func;
-        delete bcg;
-    }
+//            if (y[i] == 2)
+//            {
+//                yO[i] = 0;
+//                yerrO[i] = 0;
+//            }
+//        }
+//        else
+//        {
+//            yO[i] = 0;
+//            yerrO[i] = 0;
+//        }
+//        TString ttt = file;
+//        ttt.Replace(ttt.Last('/'),300,"/fits/old_"+result+".png");
+//        can->Print(ttt);
+//        delete func;
+//        delete bcg;
+//    }
 
     // first ToT dist
     TH1D *tot1 = (TH1D*) gDirectory->Get("tot1");
@@ -286,79 +449,118 @@ void Analysis::Fitter(TString file)
     tot1->SetStats(kFALSE);
     y_max = tot1->GetMaximum()*1.1;
     tot1->GetXaxis()->SetTitle("ToT [ns]");
+    tot1->GetXaxis()->SetRangeUser(x_min, x_max);
     tot1->GetYaxis()->SetTitle("entries [a.u.]");
-    tot1->GetYaxis()->SetTitleOffset(1.55);
+    tot1->GetYaxis()->SetTitleOffset(0.55);
     tot1->GetYaxis()->SetRangeUser(y_min, y_max);
-    gPad->SetLeftMargin(0.13);
-    gPad->SetRightMargin(0.20);
+    tot1->GetXaxis()->SetTitleSize(0.065);
+    tot1->GetYaxis()->SetTitleSize(0.065);
+    tot1->GetXaxis()->SetLabelSize(0.06);
+    tot1->GetYaxis()->SetLabelSize(0.06);
+
+//    gPad->SetLeftMargin(0.13);
+//    gPad->SetRightMargin(0.20);
     tot1->Draw();
 
-    // second ToT dist
-    TH1D *tot2 = (TH1D*) gDirectory->Get("tot2");
-    tot2->SetLineColor(kBlack);
-    tot2->SetTitle("");
-    tot2->SetStats(kFALSE);
-    tot2->Draw("same");
+    TLegend* legend2 = new TLegend(0.6, 0.75, 0.85, 0.85);
+    legend2->AddEntry(tot1  , "ToT distribution", "l");
+    legend2->Draw("same");
 
+//    // second ToT dist
+//    TH1D *tot2 = (TH1D*) gDirectory->Get("tot2");
+//    tot2->SetLineColor(kBlack);
+//    tot2->SetTitle("");
+//    tot2->SetStats(kFALSE);
+//    tot2->Draw("same");
+
+    pad1->cd();
+    gPad->SetTopMargin(1.5);
+    gPad->SetBottomMargin(0);
+//    gPad->SetLeftMargin(0.13);
     // LT table data
     TGraph* graph = new TGraph(ltFile);
     graph->SetTitle("");
 
     Float_t rightmax = 1.1*120;
-    Float_t scale = y_max/rightmax;
+    Float_t scale = 1;//y_max/rightmax;
     for (int i=0;i<graph->GetN();i++) graph->GetY()[i] *= -1000*scale;
+    graph->GetXaxis()->SetLimits(x_min,x_max);
+    graph->GetXaxis()->SetRangeUser(x_min, x_max);
+    graph->GetXaxis()->SetTitle("ToT [ns]");
+    graph->GetYaxis()->SetRangeUser(-25, rightmax);
+    graph->GetYaxis()->SetTitle("dToA [ns]");
+    graph->GetYaxis()->SetTitleOffset(0.55);
+
+    graph->GetXaxis()->SetTitleSize(0.065);
+    graph->GetYaxis()->SetTitleSize(0.065);
+    graph->GetXaxis()->SetLabelSize(0.06);
+    graph->GetYaxis()->SetLabelSize(0.06);
+
     graph->SetLineColor(kRed);
     graph->SetMarkerColor(kRed);
-    graph->Draw("same*");
+    graph->SetMarkerStyle(kFullCircle);
+    graph->SetMarkerSize(1.2);
+    graph->Draw("ap");
 
     TGaxis *axis = new TGaxis(x_max,0, x_max, y_max,0,rightmax,510,"+L");
     axis->SetTitle("dToA [ns]");
     axis->SetTextFont(1);
     axis->SetLineColor(kRed);
     axis->SetLabelColor(kRed);
-    axis->Draw();
+//    axis->Draw();
 
 
     Float_t rightmax_sig = 1.1*12;
-    Float_t scale_sig = y_max/rightmax_sig;
-    for (int i=0;i<sig_entries;i++) {y[i] *= scale_sig; yerr[i] *= scale_sig;}
+    Float_t scale_sig = rightmax/rightmax_sig;
+    for (int i=0;i<sig_entries;i++) {y[i] *= scale_sig/std::sqrt(2); yerr[i] *= scale_sig/std::sqrt(2);}
 
     TGraph* sigma = new TGraphErrors(sig_entries,x,y,xerr,yerr);
     sigma->SetLineColor(kGreen+3);
     sigma->SetMarkerColor(kGreen+3);
+    sigma->SetMarkerStyle(kCircle);
     sigma->SetFillColor(kGreen+3);
-    sigma->SetFillStyle(3010);
     sigma->Draw("samep");
 
-    for (int i=0;i<sig_entries;i++) {yO[i] *= scale_sig; yerrO[i] *= scale_sig;}
+//    for (int i=0;i<sig_entries;i++) {yO[i] *= scale_sig; yerrO[i] *= scale_sig;}
 
-    TGraph* sigmaO = new TGraphErrors(sig_entries,x,yO,xerr,yerrO);
-    sigmaO->SetLineColor(kSpring);
-    sigmaO->SetMarkerColor(kSpring);
-    sigmaO->SetFillColor(kSpring);
-    sigmaO->SetFillStyle(3010);
-    sigmaO->Draw("samep");
+//    TGraph* sigmaO = new TGraphErrors(sig_entries,x,yO,xerr,yerrO);
+//    sigmaO->SetLineColor(kSpring);
+//    sigmaO->SetMarkerColor(kSpring);
+//    sigmaO->SetFillColor(kSpring);
+//    sigmaO->SetFillStyle(3010);
+//    sigmaO->Draw("samep");
 
 
-    TGaxis *axis_sig = new TGaxis(1.15*x_max, 0, 1.15*x_max, y_max, 0, rightmax_sig,510,"+L");
-    axis_sig->SetTitle("sigma [ns]");
-    axis_sig->SetTextFont(1);
+    TGaxis *axis_sig = new TGaxis(x_max, -25, x_max, rightmax, -2, rightmax_sig,510,"+L");
+    axis_sig->SetTitle("#sigma/#surd 2  [ns]");
+    axis_sig->SetTitleFont(42);
+    axis_sig->SetTitleSize(0.065);
+    axis_sig->SetLabelFont(42);
+    axis_sig->SetLabelSize(0.06);
     axis_sig->SetLineColor(kGreen+3);
     axis_sig->SetLabelColor(kGreen+3);
+    axis_sig->SetTitleOffset(0.35);
     axis_sig->Draw();
 
-    TLegend* legend = new TLegend(0.5, 0.65, 0.75, 0.85);
-    legend->AddEntry(tot1  , "ToT1 distribution", "l");
-    legend->AddEntry(tot2  , "ToT2 distribution", "l");
-    legend->AddEntry(graph , "ToT correction"   , "l");
-    legend->AddEntry(sigmaO, "#sigma entries raw"   , "l");
-    legend->AddEntry(sigma , "#sigma entries corr"   , "l");
+    TLegend* legend = new TLegend(0.6, 0.65, 0.85, 0.85);
+//    legend->AddEntry(tot1  , "ToT distribution", "l");
+//    legend->AddEntry(tot2  , "ToT2 distribution", "l");
+    legend->AddEntry(graph , "ToT correction shift"   , "p");
+//    legend->AddEntry(sigmaO, "#sigma entries raw"   , "l");
+    legend->AddEntry(sigma , "resolution of corrected entanglement"   , "p");
     legend->Draw("same");
 
     // saving file
     TString tmpFile = file;
     tmpFile.Replace(tmpFile.Last('.'),200,"_plot.png");
     can->Print(tmpFile);
+
+    csvFile << 0 << "," << 0 << "," << 0 << "," << 0 << "," << "\n";
+    for (int tot = 1; tot <= 1500/25; tot++)
+    {
+        csvFile << tot*25 << "," << tot1->GetBinContent(tot+1) << "," << graph->GetY()[tot-1] << "," << y[tot]/scale_sig << "," << yerr[tot]/scale_sig << "\n";
+    }
+    csvFile.close();
 }
 
 void Analysis::Comparison(TString file)
