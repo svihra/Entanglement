@@ -70,6 +70,6 @@ void combine(TString fileName)
         }
         std::cout << "Saving single" << std::endl;
         save(fileName,fileRoot,-1,-1,-1,-1);
+        std::cout << "Finished " << fileName << std::endl;
     }
-    std::cout << "Finished " << fileName << std::endl;
 }
