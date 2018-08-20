@@ -77,7 +77,7 @@ void Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t startE
     {
         TString tmpOutput;
         tmpOutput.Form("_%d_%d_processed.root", Part_, Parts_-1);
-        outputName_.ReplaceAll(".root",tmpOutput);
+        outputName_.ReplaceAll(".root","_"+tree+tmpOutput);
     }
     outputRoot_ = new TFile(outputName_,"RECREATE");
 
