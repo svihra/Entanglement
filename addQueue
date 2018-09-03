@@ -1,0 +1,131 @@
+#!/bin/bash
+generate_wq_ent()
+{
+  mkdir -p ./WQ_RUNS
+  name="$job-$process-$processType-$part-$parts-$note"
+cat <<EOF > ./WQ_RUNS/wq_script_$name
+command: |
+    source ~/.zshrc
+    START=$(date +%D\ %H:%M:%S)
+    if [[ ($parts != 0) ]]; then
+        $srcDir/entanglement -b -f $file -t $processType -s $part -p $parts > $dir/${name}.log
+    else
+        $srcDir/entanglement -b -f $file -t $processType > $dir/${name}.log
+    fi
+    chmod 777 $dir/*
+    STOP=$(date +%D\ %H:%M:%S)
+    DURATION=$SECONDS
+    echo " Job: $name finished. Execution started $START, finished $STOP" | mail -s "ASTRO ent job done" $mail
+job_name: $name
+mode: bycore
+N: 1
+EOF
+SCRIPT_LIST[$count]="$srcDir/WQ_RUNS/wq_script_$name"
+}
+
+generate_wq_proc()
+{
+  mkdir -p ./WQ_RUNS
+  if [[ ( $combine = true ) ]]; then
+    data="-d $dir"
+  else
+    data="-f $file"
+  fi
+  name="$job-$process-$processType-$note"
+cat <<EOF > ./WQ_RUNS/wq_script_$name
+command: |
+    source $shellSource
+    START=$(date +%D\ %H:%M:%S)
+    $srcDir/processing -b $data -p $processType > $dir/${name}.log
+    chmod 777 $dir/*
+    STOP=$(date +%D\ %H:%M:%S)
+    echo " Job: $name finished. Execution started $START, finished $STOP" | mail -s "ASTRO proc job done" $mail
+job_name: $name
+mode: bycore
+N: 1
+EOF
+SCRIPT_LIST[$count]="$srcDir/WQ_RUNS/wq_script_$name"
+}
+
+run_wq()
+{
+  echo "The run starts!!"
+#  echo ${SCRIPT_LIST[@]}
+  wq sub -b ${SCRIPT_LIST[@]}
+}
+
+## MAIN SCRIPT STARTS HERE
+combine=false
+process="proc"
+processType="procAll"
+dir="."
+file=""
+mail=""
+
+count=0
+srcDir="$(pwd)"
+shellType="$(sed 's/.*\///' <<< $SHELL)"
+shellSource="~/.${shellType}rc"
+note=""
+parts=0
+part=0
+
+while getopts ":cf:d:p:t:m:n:s:" opt; do
+  case "${opt}" in
+    d) dir=${OPTARG};;
+    f) file=${OPTARG};;
+    c) combine=true;;
+    p) process=${OPTARG};;
+    t) processType=${OPTARG};;
+    m) mail=${OPTARG};;
+    n) note=${OPTARG};;
+    s) parts=${OPTARG};;
+    \?) echo "Invalid option: -$OPTARG";;
+    :) echo "Option -$OPTARG requires an argument."; exit 1;;
+  esac
+done
+
+if [[ ( $combine == true ) && ( $process == proc )]]; then
+  echo "Will combine all in dir"
+  echo "Generating script with path $dir for $process"
+  job="$(sed 's/.*\///' <<< $dir)"
+  generate_wq_$process 
+else
+  if ! [[ ( -z $file ) ]]; then
+    echo "Processing single file"
+    if [[ (( $file == *.root ) && ( $file != *_processed.root ) && ( ($process == ent) || ($processType == procRoot))) || (( $file == *.dat) && ( $process == proc ) && ( $processType != procRoot ))]]; then
+      dir="$(sed 's/\(.*\)\/.*/\1/' <<< $file)"
+      tmp="$(sed 's/.*\///' <<< $file)"
+      tmp2="$(sed 's/W[0-9].*//' <<< $tmp)"
+      job="$(sed 's/_$//' <<< $tmp2)"
+      echo "Generating script with path $file for $process"
+      generate_wq_$process
+    else
+      echo "Wrong combination of $file and $process - check parameters"
+    fi
+  else
+    echo "Will process all in dir"
+    shopt -s nullglob
+    for file in $dir/*; do
+      if [[ (( $file == *.root ) && ( $file != *_processed.root ) && ( ($process == ent) || ($processType == procRoot))) || (( $file == *.dat) && ( $process == proc ) && ( $processType != procRoot ))]]; then
+        echo "Generating script with path $file for $process"
+        tmp="$(sed 's/.*\///' <<< $file)"
+        tmp2="$(sed 's/W[0-9].*//' <<< $tmp)"
+  #      job="$(sed 's/_[^_]*//g' <<< $tmp)"
+        job="$(sed 's/_$//' <<< $tmp2)"
+  #      job="$(sed 's/\(.\{15\}\).*/\1/' <<< $tmp)"
+        if [[ ( $parts != 0 ) ]]; then
+            for part in $(seq 0 $[parts-1]); do
+                echo "creating $part out of $parts"
+                generate_wq_$process
+                count=$[count+1]
+            done
+        else
+            generate_wq_$process
+            count=$[count+1]
+        fi
+      fi
+    done
+  fi
+fi
+run_wq
