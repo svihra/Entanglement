@@ -16,7 +16,11 @@ TARGET = ../Scripts/entanglement
 SOURCES += main.cpp \
     analysis.cpp \
     entangled.cpp\
+    video.cpp \
+    dual.cpp
 
 HEADERS += \
     analysis.h \
     entangled.h\
+    video.h \
+    dual.h

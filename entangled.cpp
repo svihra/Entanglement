@@ -171,7 +171,7 @@ Bool_t Entangled::PositionCheck(UInt_t area[4])
         return kFALSE;
 }
 
-UInt_t Entangled::FindPairs(UInt_t area[4], Int_t &entry)
+UInt_t Entangled::FindPairs(UInt_t area[4], Int_t &entry, bool inverse)
 {
     ULong64_t diffToA = (ULong64_t) (163.84 * MAX_DIFF);
     Bool_t bFound   = kFALSE;
@@ -188,7 +188,22 @@ UInt_t Entangled::FindPairs(UInt_t area[4], Int_t &entry)
         }
 
         // area of incoming photons
-        if ( PositionCheck(area) )
+        if ( !inverse && PositionCheck(area) )
+        {
+            if ( ToAs2_[0] > ToAs_[0] && (ToAs2_[0] - ToAs_[0]) < diffToA )
+            {
+                diffToA = ToAs2_[0] - ToAs_[0];
+                nextEntry = pair;
+                bFound = kTRUE;
+            }
+            else if ( ToAs2_[0] < ToAs_[0] && (ToAs_[0] - ToAs2_[0]) < diffToA )
+            {
+                diffToA = ToAs_[0] - ToAs2_[0];
+                nextEntry = pair;
+                bFound = kTRUE;
+            }
+        }
+        else if ( inverse) // added to find pair from same area not within the area
         {
             if ( ToAs2_[0] > ToAs_[0] && (ToAs2_[0] - ToAs_[0]) < diffToA )
             {
@@ -237,16 +252,19 @@ void Entangled::ScanEntry(Int_t &entry)
 
         if (PositionCheck(area1All_))
         {
-            for (Int_t x2 = 0; x2 < X2_CUT; x2++)
+            if ((globalX1 >= 0 && globalX1 < X1_CUT) && (globalY1 >= 0 && globalY1 < Y1_CUT))
             {
-                for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
+                for (Int_t x2 = 0; x2 < X2_CUT; x2++)
                 {
-                    nextEntry_ = FindPairs(area2_[x2][y2],entry);
-                    if (nextEntry_ != 0)
+                    for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
                     {
-                        id_ = 0;
-                        rawTree_->GetEntry(nextEntry_);
-                        entTree_[globalX1][globalY1][x2][y2]->Fill();
+                        nextEntry_ = FindPairs(area2_[x2][y2],entry);
+                        if (nextEntry_ != 0)
+                        {
+                            id_ = 0;
+                            rawTree_->GetEntry(nextEntry_);
+                            entTree_[globalX1][globalY1][x2][y2]->Fill();
+                        }
                     }
                 }
             }
@@ -259,16 +277,19 @@ void Entangled::ScanEntry(Int_t &entry)
                 entTreeAll_->Fill();
             }
 
-            for (Int_t x1 = 0; x1 < X1_CUT; x1++)
+            if ((globalX1 >= 0 && globalX1 < X1_CUT) && (globalY1 >= 0 && globalY1 < Y1_CUT))
             {
-                for (Int_t y1 = 0; y1 < Y1_CUT; y1++)
+                for (Int_t x1 = 0; x1 < X1_CUT; x1++)
                 {
-                    nextEntry_ = FindPairs(area1_[x1][y1],entry);
-                    if (nextEntry_ != 0)
+                    for (Int_t y1 = 0; y1 < Y1_CUT; y1++)
                     {
-                        id_ = 1;
-                        rawTree_->GetEntry(nextEntry_);
-                        entTree_[globalX1][globalY1][x1][y1]->Fill();
+                        nextEntry_ = FindPairs(area1_[x1][y1],entry);
+                        if (nextEntry_ != 0)
+                        {
+                            id_ = 1;
+                            rawTree_->GetEntry(nextEntry_);
+                            entTree_[globalX1][globalY1][x1][y1]->Fill();
+                        }
                     }
                 }
             }
@@ -284,16 +305,19 @@ void Entangled::ScanEntry(Int_t &entry)
         }
         else
         {
-            for (Int_t x2 = 0; x2 < X2_CUT; x2++)
+            if ((globalX2 >= 0 && globalX2 < X2_CUT) && (globalY2 >= 0 && globalY2 < Y2_CUT))
             {
-                for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
+                for (Int_t x2 = 0; x2 < X2_CUT; x2++)
                 {
-                    nextEntry_ = FindPairs(area2_[x2][y2],entry);
-                    if (nextEntry_ != 0)
+                    for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
                     {
-                        id_ = 2;
-                        rawTree_->GetEntry(nextEntry_);
-                        entTree_[globalX2][globalY2][x2][y2]->Fill();
+                        nextEntry_ = FindPairs(area2_[x2][y2],entry);
+                        if (nextEntry_ != 0)
+                        {
+                            id_ = 2;
+                            rawTree_->GetEntry(nextEntry_);
+                            entTree_[globalX2][globalY2][x2][y2]->Fill();
+                        }
                     }
                 }
             }

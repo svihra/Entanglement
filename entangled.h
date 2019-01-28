@@ -9,7 +9,7 @@
 #define MAX_HITS  65536      // minimal value for sorting 65536
 #define MAX_FILES 256
 #define ENTRY_LOOP 150
-#define MAX_DIFF    312.5//156.25//15600 //936        //ns
+#define MAX_DIFF    10.9375//100//312.5//156.25//15600 //936        //ns
 #define CUT_TOT         0
 #define CUT_SIZE        1
 
@@ -21,6 +21,13 @@
 #define Y1_LOW   36
 #define Y1_HIGH  (Y1_LOW + Y1_SIZE)
 
+#define X1_SIZE_WHOLE  256
+#define X1_LOW_WHOLE   0
+#define X1_HIGH_WHOLE  (X1_LOW_WHOLE + X1_SIZE_WHOLE)
+#define Y1_SIZE_WHOLE  256
+#define Y1_LOW_WHOLE   0
+#define Y1_HIGH_WHOLE  (Y1_LOW_WHOLE + Y1_SIZE_WHOLE)
+
 // 42 x 42
 #define X2_SIZE  42
 #define X2_LOW   114
@@ -29,10 +36,17 @@
 #define Y2_LOW   168
 #define Y2_HIGH  (Y2_LOW + Y2_SIZE)
 
-#define X1_CUT  3
-#define Y1_CUT  3
-#define X2_CUT  3
-#define Y2_CUT  3
+#define X2_SIZE_WHOLE  256
+#define X2_LOW_WHOLE   0
+#define X2_HIGH_WHOLE  (X2_LOW_WHOLE + X2_SIZE_WHOLE)
+#define Y2_SIZE_WHOLE  256
+#define Y2_LOW_WHOLE   0
+#define Y2_HIGH_WHOLE  (Y2_LOW_WHOLE + Y2_SIZE_WHOLE)
+
+#define X1_CUT  1
+#define Y1_CUT  1
+#define X2_CUT  1
+#define Y2_CUT  1
 
 class Entangled
 {
@@ -45,7 +59,7 @@ private:
     void Init(TString file, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts);
 
     Bool_t PositionCheck(UInt_t area[4]);
-    UInt_t FindPairs(UInt_t area[4], Int_t &entry);
+    UInt_t FindPairs(UInt_t area[4], Int_t &entry, bool inverse = false);
     void ScanEntry(Int_t &entry);
     void PrintCsv();
 
@@ -86,8 +100,8 @@ private:
     TString     inputDir_;
     Int_t       numberOfFiles_;
 
-    UInt_t area1All_[4] = {X1_LOW, X1_HIGH, Y1_LOW, Y1_HIGH};
-    UInt_t area2All_[4] = {X2_LOW, X2_HIGH, Y2_LOW, Y2_HIGH};
+    UInt_t area1All_[4] = {X1_LOW_WHOLE, X1_HIGH_WHOLE, Y1_LOW_WHOLE, Y1_HIGH_WHOLE};
+    UInt_t area2All_[4] = {X2_LOW_WHOLE, X2_HIGH_WHOLE, Y2_LOW_WHOLE, Y2_HIGH_WHOLE};
     UInt_t area1_[X1_CUT][Y1_CUT][4];// = {X1_LOW, X1_HIGH, Y1_LOW, Y1_HIGH};
     UInt_t area2_[X2_CUT][Y2_CUT][4];// = {X2_LOW, X2_HIGH, Y2_LOW, Y2_HIGH};
 
