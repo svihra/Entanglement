@@ -24,7 +24,7 @@ Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, T
 
 void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
-    std::cout << "Setting starting second as " << start << "us" << std::endl;
+    std::cout << "Setting starting second as " << start << "s" << std::endl;
     TrigStart_ = start;
 
     ToAdiff_ = static_cast<ULong64_t>(163840 * 2.05); // converted to clocks - measured diff 2.05us
@@ -115,6 +115,10 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
             break;
         }
     }
+    TrigId2_     += TrigStart_;
+    TrigIdNext2_ += TrigStart_;
+
+    std::cout << "Shifting trig entry by " << TrigStart_ << std::endl;
 
     std::cout << "Zero time " << ToAzero_*25.0/4096000000 << "us" << std::endl;
     std::cout << "Zero time2 " << ToAzero2_*25.0/4096000000 << "us" << std::endl;
