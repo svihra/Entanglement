@@ -115,8 +115,6 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
             break;
         }
     }
-    TrigId2_     += TrigStart_;
-    TrigIdNext2_ += TrigStart_;
 
     std::cout << "Shifting trig entry by " << TrigStart_ << std::endl;
 
@@ -286,7 +284,7 @@ void Dual::ScanEntry(Long64_t &entry, Long64_t &entry2)
 {
     TrigDiff_ = TrigTimeNext_ - TrigTime_;
 
-    if (TrigIdNext_ == TrigId_)
+    if (TrigIdNext_ <= TrigId_)
     {
         TrigIdNext_++;
         FindTrig(entry2);
