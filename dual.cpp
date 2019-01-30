@@ -99,6 +99,10 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
             break;
         }
     }
+    if (TrigStart_ >= TrigId_)
+        TrigStart_ -= TrigId_;
+    else
+        TrigStart_ = 0;
 
     for (entry2_ = 0; entry2_ < Entries2_; entry2_++)
     {
@@ -172,9 +176,9 @@ void Dual::Process()
 
         if ((TrigId_ - start) < TrigStart_)
             continue;
-        if ((TrigId_ - start) > 60 + TrigStart_)
+        if ((TrigId_ - start) > 300 + TrigStart_)
         {
-            std::cout << "reached 30s from " << TrigStart_ << std::endl;
+            std::cout << "reached 300s from " << TrigStart_ << std::endl;
             break;
         }
         ScanEntry(entry_, entry2_);
