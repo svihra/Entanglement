@@ -3,13 +3,13 @@
 
 // lab is first
 // tower is second
-Dual::Dual(TString file, TString file2, Float_t diff, Int_t time, Int_t time2, TString tree, UInt_t maxEntries)
+Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
     if (file.EndsWith(".root")  && !file.EndsWith("_processed.root")
      && file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))
     {
         std::cout << "Starting init: " << std::endl;
-        Init(file, file2, diff, time, time2, tree, maxEntries);
+        Init(file, file2, start, time, time2, tree, maxEntries, name);
 
         std::cout << "Starting entanglement processing: " << std::endl;
         Process();
@@ -22,10 +22,12 @@ Dual::Dual(TString file, TString file2, Float_t diff, Int_t time, Int_t time2, T
     }
 }
 
-void Dual::Init(TString file, TString file2, Float_t diff, Int_t time, Int_t time2, TString tree, UInt_t maxEntries)
+void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
-    std::cout << "Setting time difference as " << diff << "us" << std::endl;
-    ToAdiff_ = static_cast<ULong64_t>(163840 * diff); // converted to clocks
+    std::cout << "Setting starting second as " << start << "us" << std::endl;
+    TrigStart_ = start;
+
+    ToAdiff_ = static_cast<ULong64_t>(163840 * 2.05); // converted to clocks - measured diff 2.05us
 
     std::cout << "Setting max entries as " << maxEntries << std::endl;
     maxEntries_ = maxEntries;
@@ -51,6 +53,10 @@ void Dual::Init(TString file, TString file2, Float_t diff, Int_t time, Int_t tim
     tree_->SetBranchAddress("TrigTime", &TrigTime_);
     tree_->SetBranchAddress("TrigTimeNext", &TrigTimeNext_);
 
+    timeTree_ = reinterpret_cast<TTree *>(fileRoot_->Get("timetree"));
+    std::cout << " - setting branches" << std::endl;
+    timeTree_->SetBranchAddress("TrigTime", &TrigWalk_);
+
     Entries_ = tree_->GetEntries();
 
     std::cout << "Reading tree2" << std::endl;
@@ -67,6 +73,10 @@ void Dual::Init(TString file, TString file2, Float_t diff, Int_t time, Int_t tim
     tree2_->SetBranchAddress("TrigCntr", &TrigId2_);
     tree2_->SetBranchAddress("TrigTime", &TrigTime2_);
     tree2_->SetBranchAddress("TrigTimeNext", &TrigTimeNext2_);
+
+    timeTree2_ = reinterpret_cast<TTree *>(fileRoot2_->Get("timetree"));
+    std::cout << " - setting branches" << std::endl;
+    timeTree2_->SetBranchAddress("TrigTime", &TrigWalk2_);
 
     Entries2_ = tree2_->GetEntries();
 
@@ -107,7 +117,7 @@ void Dual::Init(TString file, TString file2, Float_t diff, Int_t time, Int_t tim
 
     std::cout << "Create writing file" << std::endl;
     outputName_ = inputName_;
-    outputName_.ReplaceAll(".root","_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
+    outputName_.ReplaceAll(".root", name + "_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
     outputRoot_ = new TFile(outputName_,"RECREATE");
 
     outputRoot_->cd();
@@ -139,26 +149,32 @@ void Dual::Init(TString file, TString file2, Float_t diff, Int_t time, Int_t tim
     entTree_->Branch("TrigDiff2", &TrigDiff2_,"&TrigDiff2/l");
 }
 
+
 void Dual::Process()
 {
     outputRoot_->cd();
 
     Long64_t startEntry = entry_;
     Long64_t endEntry = Entries_;
-    UInt_t    startTrig = TrigId_;
+    UInt_t   start = TrigId_;
 
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "Starting at: entry1 " << entry_ << ", entry2 " << entry2_ << std::endl;
     for (; entry_ < endEntry; entry_++)
     {
+        tree_->GetEntry(entry_);
+
         if (maxEntries_ != 0 && entry_ >= startEntry + maxEntries_)
         {
             std::cout << "reached max entries" << std::endl;
             break;
         }
-        if ((TrigId_ - startTrig) > 30)
+
+        if ((TrigId_ - start) < TrigStart_)
+            continue;
+        if ((TrigId_ - start) > 60 + TrigStart_)
         {
-            std::cout << "reached 30s from start" << std::endl;
+            std::cout << "reached 30s from " << TrigStart_ << std::endl;
             break;
         }
         ScanEntry(entry_, entry2_);
@@ -260,7 +276,6 @@ void Dual::FindTrig(Long64_t &entry2)
 
 void Dual::ScanEntry(Long64_t &entry, Long64_t &entry2)
 {
-    tree_->GetEntry(entry);
     TrigDiff_ = TrigTimeNext_ - TrigTime_;
 
     if (TrigIdNext_ == TrigId_)

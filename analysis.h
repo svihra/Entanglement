@@ -50,7 +50,7 @@ private:
     Int_t Degrees(int x, int y);
     Bool_t PositionCheck(UInt_t &x, UInt_t &xLow, UInt_t &xHigh, UInt_t &y, UInt_t &yLow, UInt_t &yHigh, UInt_t tot = 0, UInt_t size = 0);
     Bool_t PositionCheck(UInt_t &x, UInt_t &y,  UInt_t area[4], UInt_t tot, UInt_t size);
-    UInt_t FindPairs(UInt_t area[4], Int_t &entry, data &fiber);
+    UInt_t FindPairs(UInt_t area[4], Long64_t &entry, data &fiber);
     void Randomizer();
 
     void GetWindow(data &out, UInt_t &entry, UInt_t &size, UInt_t cols[MAX_HITS], UInt_t rows[MAX_HITS], ULong64_t toas[MAX_HITS], UInt_t tots[MAX_HITS]);
@@ -69,7 +69,7 @@ private:
 
     TCanvas* can_;
     TLegend* leg_;
-    Int_t colors_[4] = {kAzure+2, kOrange+1, kRed+1, kGreen+3 };
+    Color_t colors_[4] = {kAzure+2, kOrange+1, kRed+1, kGreen+3 };
 
     UInt_t      Size_;
     UInt_t      Cols_[MAX_HITS];
@@ -83,7 +83,7 @@ private:
     ULong64_t   ToAs2_[MAX_HITS];
     UInt_t      ToTs2_[MAX_HITS];
 
-    Int_t       Entries_;
+    Long64_t    Entries_;
 
     TString     inputFiles_[MAX_FILES];
     TString     inputDir_;

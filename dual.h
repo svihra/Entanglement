@@ -17,29 +17,29 @@
 #define CUT_SIZE        1
 
 // lab I
-#define LAB_X_SIZE  16
-#define LAB_X_LOW   114
+#define LAB_X_SIZE  11
+#define LAB_X_LOW   116
 #define LAB_X_HIGH  (LAB_X_LOW + LAB_X_SIZE)
-#define LAB_Y_SIZE  16
-#define LAB_Y_LOW   109
+#define LAB_Y_SIZE  11
+#define LAB_Y_LOW   108
 #define LAB_Y_HIGH  (LAB_Y_LOW + LAB_Y_SIZE)
 
 // tower II
-#define TOWER_X_SIZE  18
-#define TOWER_X_LOW   108
+#define TOWER_X_SIZE  8
+#define TOWER_X_LOW   107
 #define TOWER_X_HIGH  (TOWER_X_LOW + TOWER_X_SIZE)
-#define TOWER_Y_SIZE  18
-#define TOWER_Y_LOW   107
+#define TOWER_Y_SIZE  8
+#define TOWER_Y_LOW   89
 #define TOWER_Y_HIGH  (TOWER_Y_LOW + TOWER_Y_SIZE)
 
 class Dual
 {
 public:
-    Dual(TString file, TString file2, Float_t diff, Int_t time, Int_t time2, TString tree, UInt_t maxEntries);
+    Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name = "");
     void Process();
 
 private:
-    void Init(TString file, TString file2, Float_t diff, Int_t time, Int_t time2, TString tree, UInt_t maxEntries);
+    void Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name);
 
     Bool_t PositionCheck(UInt_t area[4]);
     Bool_t PositionCheck2(UInt_t area[4]);
@@ -58,9 +58,11 @@ private:
 
     TFile* fileRoot_;
     TTree* tree_;
+    TTree* timeTree_;
 
     TFile* fileRoot2_;
     TTree* tree2_;
+    TTree* timeTree2_;
 
     TFile* outputRoot_;
     TString outputName_;
@@ -88,8 +90,11 @@ private:
     ULong64_t   ToATrigs_[MAX_HITS];
     UInt_t      ToTs_[MAX_HITS];
 
+    UInt_t      TrigStart_;
+
     UInt_t      TrigId_;
     UInt_t      TrigIdNext_;
+    ULong64_t   TrigWalk_;
     ULong64_t   TrigTime_;
     ULong64_t   TrigTimeNext_;
     ULong64_t   TrigDiff_;
@@ -104,6 +109,7 @@ private:
 
     UInt_t      TrigId2_;
     UInt_t      TrigIdNext2_;
+    ULong64_t   TrigWalk2_;
     ULong64_t   TrigTime2_;
     ULong64_t   TrigTimeNext2_;
     ULong64_t   TrigDiff2_;

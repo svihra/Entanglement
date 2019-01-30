@@ -82,43 +82,43 @@ Analysis::Analysis()
 
 //    Randomizer();
 //    Spatial();
-    Fitter();
-    fileRoot_->Close();
-//    if (!Browse())
-//    {
-//        std::cout << "Failed to load data" << std::endl;
-//    }
-//    else
-//    {
-//        can_ = new TCanvas("can","",1200,800);
-//        leg_ = new TLegend(0.6, 0.65, 0.8, 0.82);
-//        for (Int_t file = 0; file < numberOfFiles_; file++)
-//        {
-//            if (inputFiles_[file].EndsWith(".root"))
-//            {
-//                std::cout << "Plotting to single graph" << std::endl;
-//                Plotter(inputFiles_[file], file);
-////                std::cout << "Starting Init: " << std::endl;
-////                Comparison(inputFiles_[file]);
-////                Init(inputFiles_[file]);
-////    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
-////                Processing();
-////    //            Entanglement();
-//            }
-//            else
-//            {
-//                std::cout << "Invalid file name: " << inputFiles_[file] << std::endl;
-//            }
-//        }
-//        leg_->Draw("same");
-//        TString tmpName = inputFiles_[0];
-//        tmpName.Replace(tmpName.Last('.'),200,"_overall.eps");
-//        can_->Print(tmpName);
-//        fileRoot_->Close();
-//    //    Mapper();
-//    //    Correlation();
+//    Fitter();
+//    fileRoot_->Close();
+    if (!Browse())
+    {
+        std::cout << "Failed to load data" << std::endl;
+    }
+    else
+    {
+        can_ = new TCanvas("can","",1200,800);
+        leg_ = new TLegend(0.6, 0.65, 0.89, 0.82);
+        for (Int_t file = 0; file < numberOfFiles_; file++)
+        {
+            if (inputFiles_[file].EndsWith(".root"))
+            {
+                std::cout << "Plotting to single graph" << std::endl;
+                Plotter(inputFiles_[file], file);
+//                std::cout << "Starting Init: " << std::endl;
+//                Comparison(inputFiles_[file]);
+//                Init(inputFiles_[file]);
+//    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
+//                Processing();
+//    //            Entanglement();
+            }
+            else
+            {
+                std::cout << "Invalid file name: " << inputFiles_[file] << std::endl;
+            }
+        }
+        leg_->Draw("same");
+        TString tmpName = inputFiles_[0];
+        tmpName.Replace(tmpName.Last('.'),200,"_overall.png");
+        can_->Print(tmpName);
+        fileRoot_->Close();
+    //    Mapper();
+    //    Correlation();
 
-//    }
+    }
 }
 
 void Analysis::Init(TString file)
@@ -130,7 +130,7 @@ void Analysis::Init(TString file)
 
     std::cout << "Reading tree" << std::endl;
     fileRoot_   = new TFile(fileName_, "UPDATE");
-    rawTree_ = (TTree *) fileRoot_->Get("proctree");
+    rawTree_ = reinterpret_cast<TTree *>(fileRoot_->Get("proctree"));
     std::cout << " - setting branches" << std::endl;
     rawTree_->SetBranchAddress("Size", &Size_);
     rawTree_->SetBranchAddress("Col",  Cols_);
@@ -149,25 +149,26 @@ void Analysis::Init(TString file)
 void Analysis::Plotter(TString file, Int_t index)
 {
     fileRoot_   = new TFile(file, "READ");
-    TDirectory* dir = fileRoot_->GetDirectory("entry_0x0_0x0");
+//    TDirectory* dir = fileRoot_->GetDirectory("entry_0x0_0x0");
 
-    TTree* tmpTree = (TTree * ) dir->Get("entTree");
+    TTree* tmpTree = reinterpret_cast<TTree *>(fileRoot_->Get("entTree"));
     TCanvas* canTMP = new TCanvas("canTMP","",1200,800);
     canTMP->cd();
-    tmpTree->Draw("(ToA[0]-ToA2[0])*25.0/4096>>toa(201,-156.25,156.25)","ID==0","goff");
+    tmpTree->Draw("((ToATrig2[0]*(16384e7)/TrigDiff2)-(ToATrig[0]*(16384e7)/TrigDiff))*25.0/4096>>toa(2001,-3641.40625,-514.84375)","ID==0","goff");
+//    tmpTree->Draw("(ToA[0]-ToA2[0])*25.0/4096>>toa(201,-156.25,156.25)","ID==0","goff");
 
     TF1* func = new TF1("fit","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2)) + [4]*exp(-0.5*pow((x-[5])/[6],2))");
 
     func->SetParLimits(0,0,400);
     func->SetParLimits(1,0,1e4);
-    func->SetParLimits(2,-25,25);
-    func->SetParLimits(3,5,100);
+    func->SetParLimits(2,-2090,-2050);
+    func->SetParLimits(3,15,150);
     func->SetParLimits(4,0,1e9);
-    func->SetParLimits(5,-5,15);
-    func->SetParLimits(6,1,10);
-    func->SetParameters(100,10,8,70,20000,3,3);
+    func->SetParLimits(5,-2090,-2050);
+    func->SetParLimits(6,1,20);
+    func->SetParameters(50,10,-2080,50,400,-2070,8);
 
-    TH1D* hist = (TH1D*) gDirectory->Get("toa");
+    TH1D* hist = reinterpret_cast<TH1D*>(gDirectory->Get("toa"));
     func->SetNpx(3000);
     hist->Fit(func,"0");
 
@@ -175,26 +176,29 @@ void Analysis::Plotter(TString file, Int_t index)
     hist->SetTitle("");
     hist->SetStats(kFALSE);
     hist->GetXaxis()->SetTitle("dToA [ns]");
-    hist->GetXaxis()->SetRangeUser(-30,50);
-    hist->GetYaxis()->SetTitle("entries [a.u.]");
-    hist->GetYaxis()->SetTitleOffset(1.4);
-    hist->GetYaxis()->SetRangeUser(0, 6000);
-    hist->GetXaxis()->SetTitleSize(0.035);
-    hist->GetYaxis()->SetTitleSize(0.035);
-    hist->GetXaxis()->SetLabelSize(0.03);
-    hist->GetYaxis()->SetLabelSize(0.03);
+    hist->GetXaxis()->SetRangeUser(-2140,-2000);
+    hist->GetYaxis()->SetTitle("#entries");
+    hist->GetYaxis()->SetTitleOffset(static_cast<Float_t>(1.4));
+//    hist->GetYaxis()->SetRangeUser(0, 6000);
+    hist->GetXaxis()->SetTitleSize(static_cast<Float_t>(0.035));
+    hist->GetYaxis()->SetTitleSize(static_cast<Float_t>(0.035));
+    hist->GetXaxis()->SetLabelSize(static_cast<Float_t>(0.03 ));
+    hist->GetYaxis()->SetLabelSize(static_cast<Float_t>(0.03 ));
 
     hist->SetMarkerColor(colors_[index]);
     hist->SetMarkerStyle(kFullCircle);
-    hist->SetMarkerSize(1.2);
+    hist->SetMarkerSize(static_cast<Float_t>(1.2));
     func->SetLineColor(colors_[index]);
-    func->SetRange(-30,50);
+    func->SetRange(-2140,-2000);
 
-    TString tmpName(file(file.Last('/')+5,9));
+//    TString tmpName(file(file.Last('/')+5,9));
+    TString tmpName(file(file.Last('-')+1,9));
     tmpName.Replace(tmpName.First('_'),1,"#circ, ");
     tmpName.Replace(tmpName.First('A'),1,"#alpha = ");
     tmpName.Replace(tmpName.First('B'),2,"#beta = ");
-    tmpName.Append("#circ");
+    tmpName.Append("#circ ");
+    tmpName.Append(", N = " + std::to_string(func->GetParameter(4)));
+    tmpName.Append(", #sigma = " + std::to_string(func->GetParameter(6)));
     leg_->AddEntry(func,tmpName,"l");
     hist->Draw("P same");
     func->Draw("same");
@@ -315,8 +319,8 @@ void Analysis::Fitter(TString file)
     gPad->SetTopMargin(0);
     gPad->SetBottomMargin(1.5);
 
-    TTree* tmpTree = (TTree * ) dir->Get("entTree");
-    TTree* ttmpTree = (TTree * ) ddir->Get("entTree");
+    TTree* tmpTree  = reinterpret_cast<TTree *>(dir->Get("entTree"));
+    TTree* ttmpTree = reinterpret_cast<TTree *>(ddir->Get("entTree"));
 
     Float_t x_min, x_max;
     Float_t y_min, y_max;
@@ -444,7 +448,7 @@ void Analysis::Fitter(TString file)
 //    }
 
     // first ToT dist
-    TH1D *tot1 = (TH1D*) gDirectory->Get("tot1");
+    TH1D *tot1 = reinterpret_cast<TH1D *>(gDirectory->Get("tot1"));
     tot1->SetTitle("");
     tot1->SetStats(kFALSE);
     y_max = tot1->GetMaximum()*1.1;
@@ -691,7 +695,7 @@ bool Analysis::Browse()
 
 void Analysis::TimeScan()
 {
-    for (Int_t entry = 0; entry < Entries_; entry++)
+    for (Long64_t entry = 0; entry < Entries_; entry++)
     {
         rawTree_->GetEntry(entry);
         Float_t ToA = ((Float_t) (ToAs_[0]))*25.0/4096e9;
@@ -761,7 +765,7 @@ void Analysis::Randomizer()
     delete source;
 }
 
-UInt_t Analysis::FindPairs(UInt_t area[4], Int_t &entry, data &fiber)
+UInt_t Analysis::FindPairs(UInt_t area[4], Long64_t &entry, data &fiber)
 {
     ULong64_t diffGlobal = (ULong64_t) (163.84 * MAX_DIFF);
     ULong64_t diffToA = (ULong64_t) (163.84 * MAX_DIFF);
@@ -772,7 +776,7 @@ UInt_t Analysis::FindPairs(UInt_t area[4], Int_t &entry, data &fiber)
     UInt_t count = 0;
 
     // find pairs
-    for (Int_t pair = std::max(entry - ENTRY_LOOP, 0); pair < std::min(entry + ENTRY_LOOP, Entries_); pair++)
+    for (Long64_t pair = std::max(entry - ENTRY_LOOP, static_cast<Long64_t>(0)); pair < std::min(entry + ENTRY_LOOP, Entries_); pair++)
     {
         rawTree_->GetEntry(pair);
         if (pair == entry)
@@ -872,7 +876,7 @@ void Analysis::Processing()
     suppTree->Branch("f2ToA2" ,    ToAs2_, "f2ToA[f2]/l");
 
 
-    for (Int_t entry = 0; entry < Entries_; entry++)
+    for (Long64_t entry = 0; entry < Entries_; entry++)
     {
         if (NEVENTS != 0 && entry >= NEVENTS)
             break;
@@ -926,9 +930,9 @@ void Analysis::Processing()
             }
             else
             {
-                nextEntry = FindPairs(area1,entry, f2);
+                nextEntry = FindPairs(area1, entry, f2);
 
-                nextEntry = FindPairs(area2,entry, f1);
+                nextEntry = FindPairs(area2, entry, f1);
                 if (nextEntry != 0)
                 {
                     id = 2;
@@ -994,7 +998,7 @@ void Analysis::Entanglement()
     TH2I* mapSpatial1     = new TH2I("mapSpatial1"    , "X1 vs Y1", X1_HIGH - X1_LOW, 0, X1_HIGH - X1_LOW, Y1_HIGH - Y1_LOW, 0, Y1_HIGH - Y1_LOW);
     TH2I* mapSpatial2     = new TH2I("mapSpatial2"    , "X2 vs Y2", X2_HIGH - X2_LOW, 0, X2_HIGH - X2_LOW, Y2_HIGH - Y2_LOW, 0, Y2_HIGH - Y2_LOW);
 
-    for (Int_t entry = 0; entry < Entries_; entry++)
+    for (Long64_t entry = 0; entry < Entries_; entry++)
     {
         if (NEVENTS != 0 && entry >= NEVENTS)
             break;
@@ -1023,7 +1027,7 @@ void Analysis::Entanglement()
             rowMain = Rows_[0];
 
             // find pairs from fiber 2.
-            for (Int_t entangled = std::max(entry - ENTRY_LOOP,0); entangled < std::min(entry + ENTRY_LOOP, Entries_); entangled++)
+            for (Long64_t entangled = std::max(entry - ENTRY_LOOP, static_cast<Long64_t>(0)); entangled < std::min(entry + ENTRY_LOOP, Entries_); entangled++)
                 //            for (Int_t entangled = entry - ENTRY_LOOP; entangled < entry + ENTRY_LOOP; entangled++)
             {
                 rawTree_->GetEntry(entangled);
@@ -1066,9 +1070,9 @@ void Analysis::Entanglement()
                 histSpatialR->Fill(std::pow(std::pow((int)rowMain - (int)rowNext, 2) + std::pow((int)rowMain - (int)rowNext, 2),0.5));
 
                 mapSpatialDiff->Fill( std::abs((int)colNext - (int)colMain), std::abs((int)rowMain - (int)rowNext));
-                mapSpatialAdd ->Fill( std::abs((int)colNext + (int)colMain) - X2_LOW, std::abs((int)rowMain + (int)rowNext) - Y1_LOW);
-                mapSpatial1   ->Fill( std::abs((int)colMain - X1_LOW), std::abs((int)rowMain - Y1_LOW));
-                mapSpatial2   ->Fill( std::abs((int)colNext - X2_LOW), std::abs((int)rowNext - Y2_LOW));
+                mapSpatialAdd ->Fill( std::abs((int)colNext + (int)colMain) - (int)X2_LOW, std::abs((int)rowMain + (int)rowNext) - (int) Y1_LOW);
+                mapSpatial1   ->Fill( std::abs((int)colMain - (int)X1_LOW), std::abs((int)rowMain - (int)Y1_LOW));
+                mapSpatial2   ->Fill( std::abs((int)colNext - (int)X2_LOW), std::abs((int)rowNext - (int)Y2_LOW));
 
 //                std::cout << "deltaY: "<<std::abs((int)rowMain - (int)rowNext) << std::endl;
 
@@ -1083,7 +1087,7 @@ void Analysis::Entanglement()
             // sanity check (compare fiber 1. to itself)
             //            for (Int_t single = entry - ENTRY_LOOP; single < entry + ENTRY_LOOP; single++)
 //            for (Int_t single = std::max(entry - ENTRY_LOOP,0); single < std::min(entry + ENTRY_LOOP, Entries_); single++)
-            for (Int_t single = entry; single < std::min(entry + ENTRY_LOOP, Entries_); single++)
+            for (Long64_t single = entry; single < std::min(entry + ENTRY_LOOP, Entries_); single++)
             {
                 rawTree_->GetEntry(single);
                 if (single == entry)
@@ -1177,7 +1181,7 @@ void Analysis::Entanglement()
             rowMain = Rows_[0];
 
             // find pairs from fiber 1.
-            for (Int_t entangled = std::max(entry - ENTRY_LOOP,0); entangled < std::min(entry + ENTRY_LOOP, Entries_); entangled++)
+            for (Long64_t entangled = std::max(entry - ENTRY_LOOP, static_cast<Long64_t>(0)); entangled < std::min(entry + ENTRY_LOOP, Entries_); entangled++)
                 //            for (Int_t entangled = entry - ENTRY_LOOP; entangled < entry + ENTRY_LOOP; entangled++)
             {
                 rawTree_->GetEntry(entangled);
@@ -1220,7 +1224,7 @@ void Analysis::Entanglement()
             // sanity check (compare fiber 2. to itself)
             //            for (Int_t single = entry - ENTRY_LOOP; single < entry + ENTRY_LOOP; single++)
 //            for (Int_t single = std::max(entry - ENTRY_LOOP,0); single < std::min(entry + ENTRY_LOOP, Entries_); single++)
-            for (Int_t single = entry; single < std::min(entry + ENTRY_LOOP, Entries_); single++)
+            for (Long64_t single = entry; single < std::min(entry + ENTRY_LOOP, Entries_); single++)
             {
                 rawTree_->GetEntry(single);
                 if (single == entry)

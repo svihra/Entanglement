@@ -17,6 +17,7 @@ int main(int argc, char **argv)
     int c;
     bool bash = false;
 //    TString dir = ".";
+    TString name = "";
     TString file = "";
     TString file2 = "";
     Int_t zero = 0;
@@ -27,16 +28,19 @@ int main(int argc, char **argv)
     Int_t startPart = -1;
     Int_t parts = 25;
 
-    while( ( c = getopt (argc, argv, ":bd:f:g:t:e:s:p:z:x:") ) != -1 )
+    while( ( c = getopt (argc, argv, ":bn:d:f:g:t:e:s:p:z:x:") ) != -1 )
     {
         switch(c)
         {
             case 'b':
                 bash = true;
                 break;
+            case 'n':
+                if (optarg){ name = (TString) optarg; break;}
+                else {std::cout << "Missing name" << std::endl;}
             case 'd':
                 if (optarg){ diff = (Float_t) std::atof(optarg); break;}
-                else {std::cout << "Missing dir name" << std::endl;}
+                else {std::cout << "Missing diff value" << std::endl;}
             case 'f':
                 if(optarg){ file = (TString) optarg; break;}
                 else {std::cout << "Missing file name" << std::endl;}
@@ -79,13 +83,13 @@ int main(int argc, char **argv)
     }
     if (bash)
 //        new Entangled(file, tree, maxEntries, startPart, parts);
-        new Dual(file, file2, diff, zero, zero2, tree, maxEntries);
+        new Dual(file, file2, diff, zero, zero2, tree, maxEntries, name);
     else
     {
         TApplication theApp("App",&argc,argv);
 
-//        new Analysis();
-        new Video();
+        new Analysis();
+//        new Video();
         theApp.Run();
     }
     time.Stop();
