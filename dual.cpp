@@ -58,7 +58,7 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
     if (!AddFiles(dir2_, file2, treeChain2_, timeChain2_))
         return -1;
 
-    std::cout << "Reading tree1" << std::endl;
+    std::cout << "Reading chain1" << std::endl;
 
 //    fileRoot_   = new TFile(inputName_, "READ");
 //    std::cout << "Getting tree1" << std::endl;
@@ -80,7 +80,7 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
 
     Entries_ = treeChain_->GetEntries();
 
-//    std::cout << "Reading tree2" << std::endl;
+    std::cout << "Reading chain2" << std::endl;
 //    fileRoot2_   = new TFile(inputName2_, "READ");
 //    std::cout << "Getting tree2" << std::endl;
 //    tree2_ = reinterpret_cast<TTree *>(fileRoot2_->Get(tree));
@@ -186,6 +186,7 @@ Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, 
     if (dir->IsDirectory())
     {
         TString dname = dir->GetName();
+        std::cout << "Directory: " << dname << std::endl;
         TList *files = dir->GetListOfFiles();
         if (files)
         {
