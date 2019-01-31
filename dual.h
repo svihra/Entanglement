@@ -45,9 +45,9 @@ public:
     void Process();
 
 private:
-    Int_t Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name);
+    Bool_t Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name);
 
-    Int_t AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime);
+    Bool_t AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime);
 
     Bool_t PositionCheck(UInt_t area[4]);
     Bool_t PositionCheck2(UInt_t area[4]);

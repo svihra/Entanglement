@@ -29,7 +29,7 @@ Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, T
     }
 }
 
-Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
+Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
     std::cout << "Setting starting second as " << start << "s" << std::endl;
     TrigStart_ = start;
@@ -53,10 +53,10 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
     timeChain2_ = new TChain("timetree");
 
     if (!AddFiles(dir_, treeChain_, timeChain_))
-        return -1;
+        return kFALSE;
 
     if (!AddFiles(dir2_, treeChain2_, timeChain2_))
-        return -1;
+        return kFALSE;
 
     std::cout << "Reading chain1" << std::endl;
 
@@ -181,7 +181,7 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
     return 1;
 }
 
-Int_t Dual::AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime)
+Bool_t Dual::AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime)
 {
     TString name = dir->GetName();
     if (dir->IsDirectory())
@@ -207,7 +207,7 @@ Int_t Dual::AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime)
             }
         }
         else
-            return -1;
+            return kFALSE;
     }
     else
     {
@@ -215,7 +215,7 @@ Int_t Dual::AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime)
         chainDat->Add(name);
         chainTime->Add(name);
     }
-    return 0;
+    return kTRUE;
 }
 
 
