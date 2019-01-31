@@ -18,6 +18,10 @@ Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, T
             outputRoot_->Write();
             outputRoot_->Close();
         }
+        else
+        {
+            std::cout << "Something wrong with reading files/dirs" << std::endl;
+        }
     }
     else
     {
@@ -49,10 +53,10 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
     timeChain2_ = new TChain("timetree");
 
     if (!AddFiles(dir_, file, treeChain_, timeChain_))
-        return 0;
+        return -1;
 
     if (!AddFiles(dir2_, file2, treeChain2_, timeChain2_))
-        return 0;
+        return -1;
 
     std::cout << "Reading tree1" << std::endl;
 
@@ -201,14 +205,14 @@ Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, 
             }
         }
         else
-            return 0;
+            return -1;
     }
     else
     {
         chainDat->Add(fileName);
         chainTime->Add(fileName);
     }
-    return 1;
+    return 0;
 }
 
 
