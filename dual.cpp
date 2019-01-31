@@ -7,8 +7,8 @@ Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, T
 {
     dir_  = new TSystemDirectory(file, file);
     dir2_ = new TSystemDirectory(file2, file2);
-    if ((dir_->IsDirectory() || (file.EndsWith(".root")  && !file.EndsWith("_processed.root")))
-     && (dir2_->IsDirectory() || (file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))))
+    if ((dir_->IsFolder() || (file.EndsWith(".root")  && !file.EndsWith("_processed.root")))
+     && (dir2_->IsFolder() || (file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))))
     {
         std::cout << "Starting init: " << std::endl;
         if (Init(file, file2, start, time, time2, tree, maxEntries, name))
@@ -183,7 +183,7 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
 
 Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, TChain* chainTime)
 {
-    if (dir->IsDirectory())
+    if (dir->IsFolder())
     {
         TString dname = dir->GetName();
         std::cout << "Directory: " << dname << std::endl;
@@ -197,7 +197,7 @@ Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, 
             while ((file=(TSystemFile*)next()))
             {
                 fname = file->GetName();
-                if (!file->IsDirectory() && fname.EndsWith(".root") && !fname.EndsWith("processed.root"))
+                if (!file->IsFolder() && fname.EndsWith(".root") && !fname.EndsWith("processed.root"))
                 {
                     std::cout << fname << " at " << dname << std::endl;
                     chainDat->Add(dname + "/" + fname);
