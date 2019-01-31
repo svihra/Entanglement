@@ -76,7 +76,7 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
 
 //    timeTree_ = reinterpret_cast<TTree *>(fileRoot_->Get("timetree"));
 //    std::cout << " - setting branches" << std::endl;
-    timeChain2_->SetBranchAddress("TrigTime", &TrigWalk_);
+    timeChain_->SetBranchAddress("TrigTime", &TrigWalk_);
 
     Entries_ = treeChain_->GetEntries();
 
@@ -99,7 +99,7 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
 //    std::cout << " - setting branches" << std::endl;
     timeChain2_->SetBranchAddress("TrigTime", &TrigWalk2_);
 
-    Entries2_ = timeChain2_->GetEntries();
+    Entries2_ = treeChain2_->GetEntries();
 
     treeChain_->GetEntry(0);
     treeChain2_->GetEntry(0);
