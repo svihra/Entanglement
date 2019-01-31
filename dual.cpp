@@ -5,16 +5,19 @@
 // tower is second
 Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
-    if (file.EndsWith(".root")  && !file.EndsWith("_processed.root")
-     && file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))
+    dir_  = new TSystemDirectory(file, file);
+    dir2_ = new TSystemDirectory(file, file);
+    if ((dir_->IsDirectory() || (file.EndsWith(".root")  && !file.EndsWith("_processed.root")))
+     && (dir2_->IsDirectory() || (file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))))
     {
         std::cout << "Starting init: " << std::endl;
-        Init(file, file2, start, time, time2, tree, maxEntries, name);
-
-        std::cout << "Starting entanglement processing: " << std::endl;
-        Process();
-        outputRoot_->Write();
-        outputRoot_->Close();
+        if (Init(file, file2, start, time, time2, tree, maxEntries, name))
+        {
+            std::cout << "Starting entanglement processing: " << std::endl;
+            Process();
+            outputRoot_->Write();
+            outputRoot_->Close();
+        }
     }
     else
     {
@@ -22,7 +25,7 @@ Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, T
     }
 }
 
-void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
+Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
     std::cout << "Setting starting second as " << start << "s" << std::endl;
     TrigStart_ = start;
@@ -32,56 +35,70 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
     std::cout << "Setting max entries as " << maxEntries << std::endl;
     maxEntries_ = maxEntries;
 
-    std::cout << "Reading files: " << std::endl;
+    std::cout << "Reading dirs/files: " << std::endl;
     std::cout << file << std::endl;
     std::cout << file2 << std::endl;
+
     inputName_ = file;
     inputName2_ = file2;
 
+    treeChain_  = new TChain(tree);
+    treeChain2_ = new TChain(tree);
+
+    timeChain_  = new TChain("timetree");
+    timeChain2_ = new TChain("timetree");
+
+    if (!AddFiles(dir_, file, treeChain_, timeChain_))
+        return 0;
+
+    if (!AddFiles(dir2_, file2, treeChain2_, timeChain2_))
+        return 0;
+
     std::cout << "Reading tree1" << std::endl;
-    fileRoot_   = new TFile(inputName_, "READ");
-    std::cout << "Getting tree1" << std::endl;
-    tree_ = reinterpret_cast<TTree *>(fileRoot_->Get(tree));
+
+//    fileRoot_   = new TFile(inputName_, "READ");
+//    std::cout << "Getting tree1" << std::endl;
+//    tree_ = reinterpret_cast<TTree *>(fileRoot_->Get(tree));
     std::cout << " - setting branches" << std::endl;
-    tree_->SetBranchAddress("Size"    , &Size_);
-    tree_->SetBranchAddress("Col"     ,  Cols_);
-    tree_->SetBranchAddress("Row"     ,  Rows_);
-    tree_->SetBranchAddress("ToT"     ,  ToTs_);
-    tree_->SetBranchAddress("ToA"     ,  ToAs_);
-    tree_->SetBranchAddress("ToATrig" ,  ToATrigs_);    // l for long unsigned
-    tree_->SetBranchAddress("TrigCntr", &TrigId_);
-    tree_->SetBranchAddress("TrigTime", &TrigTime_);
-    tree_->SetBranchAddress("TrigTimeNext", &TrigTimeNext_);
+    treeChain_->SetBranchAddress("Size"    , &Size_);
+    treeChain_->SetBranchAddress("Col"     ,  Cols_);
+    treeChain_->SetBranchAddress("Row"     ,  Rows_);
+    treeChain_->SetBranchAddress("ToT"     ,  ToTs_);
+    treeChain_->SetBranchAddress("ToA"     ,  ToAs_);
+    treeChain_->SetBranchAddress("ToATrig" ,  ToATrigs_);    // l for long unsigned
+    treeChain_->SetBranchAddress("TrigCntr", &TrigId_);
+    treeChain_->SetBranchAddress("TrigTime", &TrigTime_);
+    treeChain_->SetBranchAddress("TrigTimeNext", &TrigTimeNext_);
 
-    timeTree_ = reinterpret_cast<TTree *>(fileRoot_->Get("timetree"));
+//    timeTree_ = reinterpret_cast<TTree *>(fileRoot_->Get("timetree"));
+//    std::cout << " - setting branches" << std::endl;
+    timeChain2_->SetBranchAddress("TrigTime", &TrigWalk_);
+
+    Entries_ = treeChain_->GetEntries();
+
+//    std::cout << "Reading tree2" << std::endl;
+//    fileRoot2_   = new TFile(inputName2_, "READ");
+//    std::cout << "Getting tree2" << std::endl;
+//    tree2_ = reinterpret_cast<TTree *>(fileRoot2_->Get(tree));
     std::cout << " - setting branches" << std::endl;
-    timeTree_->SetBranchAddress("TrigTime", &TrigWalk_);
+    treeChain2_->SetBranchAddress("Size", &Size2_);
+    treeChain2_->SetBranchAddress("Col",  Cols2_);
+    treeChain2_->SetBranchAddress("Row",  Rows2_);
+    treeChain2_->SetBranchAddress("ToT",  ToTs2_);
+    treeChain2_->SetBranchAddress("ToA",  ToAs2_);
+    treeChain2_->SetBranchAddress("ToATrig" ,  ToATrigs2_);    // l for long unsigned
+    treeChain2_->SetBranchAddress("TrigCntr", &TrigId2_);
+    treeChain2_->SetBranchAddress("TrigTime", &TrigTime2_);
+    treeChain2_->SetBranchAddress("TrigTimeNext", &TrigTimeNext2_);
 
-    Entries_ = tree_->GetEntries();
+//    timeChain2_ = reinterpret_cast<TTree *>(fileRoot2_->Get("timetree"));
+//    std::cout << " - setting branches" << std::endl;
+    timeChain2_->SetBranchAddress("TrigTime", &TrigWalk2_);
 
-    std::cout << "Reading tree2" << std::endl;
-    fileRoot2_   = new TFile(inputName2_, "READ");
-    std::cout << "Getting tree2" << std::endl;
-    tree2_ = reinterpret_cast<TTree *>(fileRoot2_->Get(tree));
-    std::cout << " - setting branches" << std::endl;
-    tree2_->SetBranchAddress("Size", &Size2_);
-    tree2_->SetBranchAddress("Col",  Cols2_);
-    tree2_->SetBranchAddress("Row",  Rows2_);
-    tree2_->SetBranchAddress("ToT",  ToTs2_);
-    tree2_->SetBranchAddress("ToA",  ToAs2_);
-    tree2_->SetBranchAddress("ToATrig" ,  ToATrigs2_);    // l for long unsigned
-    tree2_->SetBranchAddress("TrigCntr", &TrigId2_);
-    tree2_->SetBranchAddress("TrigTime", &TrigTime2_);
-    tree2_->SetBranchAddress("TrigTimeNext", &TrigTimeNext2_);
+    Entries2_ = timeChain2_->GetEntries();
 
-    timeTree2_ = reinterpret_cast<TTree *>(fileRoot2_->Get("timetree"));
-    std::cout << " - setting branches" << std::endl;
-    timeTree2_->SetBranchAddress("TrigTime", &TrigWalk2_);
-
-    Entries2_ = tree2_->GetEntries();
-
-    tree_->GetEntry(0);
-    tree2_->GetEntry(0);
+    treeChain_->GetEntry(0);
+    treeChain2_->GetEntry(0);
 
     std::cout << "Time offset 1: " << time << "s, 2: " << time2 << "s" << std::endl;
 
@@ -90,7 +107,7 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
 
     for (entry_ = 0; entry_ < Entries_; entry_++)
     {
-        tree_->GetEntry(entry_);
+        treeChain_->GetEntry(entry_);
         if (TrigTime_ > ToAzero_)
         {
             ToAzero_ = TrigTime_;
@@ -106,7 +123,7 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
 
     for (entry2_ = 0; entry2_ < Entries2_; entry2_++)
     {
-        tree2_->GetEntry(entry2_);
+        treeChain2_->GetEntry(entry2_);
         if (TrigTime2_ > ToAzero2_)
         {
             ToAzero2_ = TrigTime2_;
@@ -123,7 +140,10 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
 
     std::cout << "Create writing file" << std::endl;
     outputName_ = inputName_;
-    outputName_.ReplaceAll(".root", name + "_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
+    if (dir_->IsDirectory())
+        outputName_.Append("entangled" + name + "_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
+    else
+        outputName_.ReplaceAll(".root", name + "_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
     outputRoot_ = new TFile(outputName_,"RECREATE");
 
     outputRoot_->cd();
@@ -153,6 +173,41 @@ void Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t tim
     entTree_->Branch("TrigCntr2", &TrigId2_  ,"&TrigCntr2/i");
     entTree_->Branch("TrigTime2", &TrigTime2_,"&TrigTime2/l");
     entTree_->Branch("TrigDiff2", &TrigDiff2_,"&TrigDiff2/l");
+
+    return 1;
+}
+
+Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, TChain* chainTime)
+{
+    if (dir->IsDirectory())
+    {
+        TList *files = dir->GetListOfFiles();
+        if (files)
+        {
+            files->Sort(kSortAscending);
+            TSystemFile *file;
+            TString fname;
+            TIter next(files);
+            while ((file=(TSystemFile*)next()))
+            {
+                fname = file->GetName();
+                if (!file->IsDirectory() && fname.EndsWith(".root") && !fname.EndsWith("processed.root"))
+                {
+                    std::cout << fname << std::endl;
+                    chainDat->Add(fname);
+                    chainTime->Add(fname);
+                }
+            }
+        }
+        else
+            return 0;
+    }
+    else
+    {
+        chainDat->Add(fileName);
+        chainTime->Add(fileName);
+    }
+    return 1;
 }
 
 
@@ -168,7 +223,7 @@ void Dual::Process()
     std::cout << "Starting at: entry1 " << entry_ << ", entry2 " << entry2_ << std::endl;
     for (; entry_ < endEntry; entry_++)
     {
-        tree_->GetEntry(entry_);
+        treeChain_->GetEntry(entry_);
 
         if (maxEntries_ != 0 && entry_ >= startEntry + maxEntries_)
         {
@@ -221,7 +276,7 @@ Long64_t Dual::FindPairs(UInt_t area[4], Long64_t &entry)
     // find pairs
     for (Long64_t pair = std::max(entry - DUAL_ENTRY_LOOP, static_cast<Long64_t>(0)); pair < std::min(entry + DUAL_ENTRY_LOOP, Entries2_); pair++)
     {
-        tree2_->GetEntry(pair);
+        treeChain2_->GetEntry(pair);
 
         // area of incoming photons
         if ( ( TrigId2_ == (TrigIdNext2_ - 1)) && PositionCheck2(area))
@@ -252,14 +307,14 @@ Long64_t Dual::FindPairs(UInt_t area[4], Long64_t &entry)
 
 bool Dual::FindEntry(Long64_t &entry2)
 {
-    tree2_->GetEntry(entry2);
+    treeChain2_->GetEntry(entry2);
     TrigDiff2_ = TrigTimeNext2_ - TrigTime2_;
 
     while(static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) < static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_))
        && TrigIdNext2_ != TrigId2_
        && entry2 < Entries2_ )
     {
-        tree2_->GetEntry(entry2++);
+        treeChain2_->GetEntry(entry2++);
     }
 
     if (TrigIdNext2_ == TrigId2_)
@@ -270,11 +325,11 @@ bool Dual::FindEntry(Long64_t &entry2)
 
 void Dual::FindTrig(Long64_t &entry2)
 {
-    tree2_->GetEntry(entry2);
+    treeChain2_->GetEntry(entry2);
 
     while(TrigIdNext2_ != TrigId2_ && entry2 < Entries2_)
     {
-        tree2_->GetEntry(entry2++);
+        treeChain2_->GetEntry(entry2++);
     }
 
     TrigIdNext2_++;
@@ -311,7 +366,7 @@ void Dual::ScanEntry(Long64_t &entry, Long64_t &entry2)
             if (nextEntry_ != 0)
             {
                 id_ = 0;
-                tree2_->GetEntry(nextEntry_);
+                treeChain2_->GetEntry(nextEntry_);
                 entTree_->Fill();
             }
         }

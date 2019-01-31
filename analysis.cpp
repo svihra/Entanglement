@@ -179,7 +179,7 @@ void Analysis::Plotter(TString file, Int_t index)
     hist->GetXaxis()->SetRangeUser(-2140,-2000);
     hist->GetYaxis()->SetTitle("#entries");
     hist->GetYaxis()->SetTitleOffset(static_cast<Float_t>(1.4));
-//    hist->GetYaxis()->SetRangeUser(0, 6000);
+    hist->GetYaxis()->SetRangeUser(0, 800);
     hist->GetXaxis()->SetTitleSize(static_cast<Float_t>(0.035));
     hist->GetYaxis()->SetTitleSize(static_cast<Float_t>(0.035));
     hist->GetXaxis()->SetLabelSize(static_cast<Float_t>(0.03 ));

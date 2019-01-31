@@ -7,6 +7,12 @@
 #include <TTree.h>
 #include <TCanvas.h>
 
+#include <TChain.h>
+#include <TList.h>
+#include <TSystemFile.h>
+#include <TIterator.h>
+#include <TSystemDirectory.h>
+
 #include <iostream>
 
 #define MAX_HITS  65536      // minimal value for sorting 65536
@@ -39,7 +45,9 @@ public:
     void Process();
 
 private:
-    void Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name);
+    Int_t Init(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name);
+
+    Int_t AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, TChain* chainTime);
 
     Bool_t PositionCheck(UInt_t area[4]);
     Bool_t PositionCheck2(UInt_t area[4]);
@@ -56,13 +64,21 @@ private:
     TString inputName_;
     TString inputName2_;
 
-    TFile* fileRoot_;
-    TTree* tree_;
-    TTree* timeTree_;
+    TChain* treeChain_;
+    TChain* timeChain_;
+    TChain* treeChain2_;
+    TChain* timeChain2_;
 
-    TFile* fileRoot2_;
-    TTree* tree2_;
-    TTree* timeTree2_;
+    TSystemDirectory* dir_;
+    TSystemDirectory* dir2_;
+
+//    TFile* fileRoot_;
+//    TTree* tree_;
+//    TTree* timeTree_;
+
+//    TFile* fileRoot2_;
+//    TTree* tree2_;
+//    TTree* timeTree2_;
 
     TFile* outputRoot_;
     TString outputName_;
