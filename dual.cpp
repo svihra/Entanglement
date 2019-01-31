@@ -5,10 +5,10 @@
 // tower is second
 Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
-    dir_  = new TSystemDirectory(file, file);
-    dir2_ = new TSystemDirectory(file2, file2);
-    if ((dir_->IsFolder() || (file.EndsWith(".root")  && !file.EndsWith("_processed.root")))
-     && (dir2_->IsFolder() || (file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))))
+    dir_  = new TSystemFile(file, file);
+    dir2_ = new TSystemFile(file2, file2);
+    if ((dir_->IsDirectory() || (file.EndsWith(".root")  && !file.EndsWith("_processed.root")))
+     && (dir2_->IsDirectory() || (file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))))
     {
         std::cout << "Starting init: " << std::endl;
         if (Init(file, file2, start, time, time2, tree, maxEntries, name))
@@ -52,10 +52,10 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
     timeChain_  = new TChain("timetree");
     timeChain2_ = new TChain("timetree");
 
-    if (!AddFiles(dir_, file, treeChain_, timeChain_))
+    if (!AddFiles(dir_, treeChain_, timeChain_))
         return -1;
 
-    if (!AddFiles(dir2_, file2, treeChain2_, timeChain2_))
+    if (!AddFiles(dir2_, treeChain2_, timeChain2_))
         return -1;
 
     std::cout << "Reading chain1" << std::endl;
@@ -181,13 +181,14 @@ Int_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t ti
     return 1;
 }
 
-Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, TChain* chainTime)
+Int_t Dual::AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime)
 {
-    if (dir->IsFolder())
+    TString name = dir->GetName();
+    if (dir->IsDirectory())
     {
-        TString dname = dir->GetName();
-        std::cout << "Directory: " << dname << std::endl;
-        TList *files = dir->GetListOfFiles();
+        TSystemDirectory folder(name,name);
+        std::cout << "Directory: " << name << std::endl;
+        TList *files = folder.GetListOfFiles();
         if (files)
         {
             files->Sort(kSortAscending);
@@ -197,11 +198,11 @@ Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, 
             while ((file=(TSystemFile*)next()))
             {
                 fname = file->GetName();
-                if (!file->IsFolder() && fname.EndsWith(".root") && !fname.EndsWith("processed.root"))
+                if (!file->IsDirectory() && fname.EndsWith(".root") && !fname.EndsWith("processed.root"))
                 {
-                    std::cout << fname << " at " << dname << std::endl;
-                    chainDat->Add(dname + "/" + fname);
-                    chainTime->Add(dname + "/" + fname);
+                    std::cout << fname << " at " << name << std::endl;
+                    chainDat->Add(name + "/" + fname);
+                    chainTime->Add(name + "/" + fname);
                 }
             }
         }
@@ -210,8 +211,9 @@ Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, 
     }
     else
     {
-        chainDat->Add(fileName);
-        chainTime->Add(fileName);
+        std::cout << "File: " << name << std::endl;
+        chainDat->Add(name);
+        chainTime->Add(name);
     }
     return 0;
 }
