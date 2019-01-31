@@ -181,6 +181,7 @@ Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, 
 {
     if (dir->IsDirectory())
     {
+        TString dname = dir->GetName();
         TList *files = dir->GetListOfFiles();
         if (files)
         {
@@ -193,9 +194,9 @@ Int_t Dual::AddFiles(TSystemDirectory* dir, TString fileName, TChain* chainDat, 
                 fname = file->GetName();
                 if (!file->IsDirectory() && fname.EndsWith(".root") && !fname.EndsWith("processed.root"))
                 {
-                    std::cout << fname << std::endl;
-                    chainDat->Add(fname);
-                    chainTime->Add(fname);
+                    std::cout << fname << " at " << dname << std::endl;
+                    chainDat->Add(dname + "/" + fname);
+                    chainTime->Add(dname + "/" + fname);
                 }
             }
         }
