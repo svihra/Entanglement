@@ -6,7 +6,7 @@
 Dual::Dual(TString file, TString file2, UInt_t start, Int_t time, Int_t time2, TString tree, UInt_t maxEntries, TString name)
 {
     dir_  = new TSystemDirectory(file, file);
-    dir2_ = new TSystemDirectory(file, file);
+    dir2_ = new TSystemDirectory(file2, file2);
     if ((dir_->IsDirectory() || (file.EndsWith(".root")  && !file.EndsWith("_processed.root")))
      && (dir2_->IsDirectory() || (file2.EndsWith(".root") && !file2.EndsWith("_processed.root"))))
     {
