@@ -59,6 +59,7 @@ UInt_t X2_HIGH   = 156;
 UInt_t Y2_LOW    = 168;
 UInt_t Y2_HIGH   = 211;
 
+
 //UInt_t X1_LOW    = 101;
 //UInt_t X1_HIGH   = 130;
 //UInt_t Y1_LOW    =  35;
@@ -149,6 +150,24 @@ void Analysis::Init(TString file)
 void Analysis::Plotter(TString file, Int_t index)
 {
     fileRoot_   = new TFile(file, "READ");
+
+    LTnames lentry[16];
+    lentry[0].time = "_175";  lentry[0].name = "A0 B22.5";
+    lentry[1].time = "_575";  lentry[0].name = "A0 B67.5";
+    lentry[2].time = "_975";  lentry[0].name = "A0 B112.5";
+    lentry[3].time = "_1375"; lentry[0].name = "A0 B157.5";
+    lentry[4].time = "_1775"; lentry[0].name = "A90 B22.5";
+    lentry[5].time = "_2175"; lentry[0].name = "A90 B67.5";
+    lentry[6].time = "_2575"; lentry[0].name = "A90 B112.5";
+    lentry[7].time = "_2875"; lentry[0].name = "A90 B157.5";
+    lentry[8].time = "722222"; lentry[0].name = "A0";
+    lentry[9].time = "722222"; lentry[0].name = "A0";
+    lentry[10].time = "722222"; lentry[0].name = "A0";
+    lentry[11].time = "722222"; lentry[0].name = "A0";
+    lentry[12].time = "722222"; lentry[0].name = "A0";
+    lentry[13].time = "722222"; lentry[0].name = "A0";
+    lentry[14].time = "722222"; lentry[0].name = "A0";
+    lentry[15].time = "722222"; lentry[0].name = "A0";
 //    TDirectory* dir = fileRoot_->GetDirectory("entry_0x0_0x0");
 
     TTree* tmpTree = reinterpret_cast<TTree *>(fileRoot_->Get("entTree"));
@@ -157,16 +176,16 @@ void Analysis::Plotter(TString file, Int_t index)
     tmpTree->Draw("((ToATrig2[0]*(16384e7)/TrigDiff2)-(ToATrig[0]*(16384e7)/TrigDiff))*25.0/4096>>toa(2001,-3641.40625,-514.84375)","ID==0","goff");
 //    tmpTree->Draw("(ToA[0]-ToA2[0])*25.0/4096>>toa(201,-156.25,156.25)","ID==0","goff");
 
-    TF1* func = new TF1("fit","[0] + [1]*exp((-0.5)*pow((x-[2])/[3],2)) + [4]*exp(-0.5*pow((x-[5])/[6],2))");
+    TF1* func = new TF1("fit","[0] + ([1]/([3]*sqrt(2*3.1415)))*exp((-0.5)*pow((x-[2])/[3],2)) + ([4]/([6]*sqrt(2*3.1415)))*exp(-0.5*pow((x-[5])/[6],2))");
 
     func->SetParLimits(0,0,400);
-    func->SetParLimits(1,0,1e4);
+    func->SetParLimits(1,0,154);
     func->SetParLimits(2,-2090,-2050);
     func->SetParLimits(3,15,150);
-    func->SetParLimits(4,0,1e9);
+    func->SetParLimits(4,0,1e8);
     func->SetParLimits(5,-2090,-2050);
     func->SetParLimits(6,1,20);
-    func->SetParameters(50,10,-2080,50,400,-2070,8);
+    func->SetParameters(50,800,-2080,50,7000,-2070,8);
 
     TH1D* hist = reinterpret_cast<TH1D*>(gDirectory->Get("toa"));
     func->SetNpx(3000);
@@ -192,12 +211,20 @@ void Analysis::Plotter(TString file, Int_t index)
     func->SetRange(-2140,-2000);
 
 //    TString tmpName(file(file.Last('/')+5,9));
-    TString tmpName(file(file.Last('-')+1,9));
-    tmpName.Replace(tmpName.First('_'),1,"#circ, ");
-    tmpName.Replace(tmpName.First('A'),1,"#alpha = ");
-    tmpName.Replace(tmpName.First('B'),2,"#beta = ");
-    tmpName.Append("#circ ");
-    tmpName.Append(", N = " + std::to_string(func->GetParameter(4)));
+    TString tmpName(file(file.Last('-')+7,5));
+//    for (int i = 0; i < 8; i++)
+//    {
+//        if (tmpName.Contains(lentry[i].time))
+//        {
+//            tmpName.Replace(0,200,"");//lentry[i].time,lentry[i].name);
+//            tmpName.Append(lentry[i].name);
+//        }
+//    }
+//    tmpName.Replace(tmpName.First('_'),1,"#circ, ");
+//    tmpName.Replace(tmpName.First('A'),1,"#alpha = ");
+//    tmpName.Replace(tmpName.First('B'),2,"#beta = ");
+//    tmpName.Append("#circ ");
+    tmpName.Append(", N = " + std::to_string(func->GetParameter(4)+func->GetParameter(1)));
     tmpName.Append(", #sigma = " + std::to_string(func->GetParameter(6)));
     leg_->AddEntry(func,tmpName,"l");
     hist->Draw("P same");

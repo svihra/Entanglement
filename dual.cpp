@@ -101,8 +101,12 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
 
     Entries2_ = treeChain2_->GetEntries();
 
+    TrigIdTmp_  = 1;
+    TrigIdTmp2_ = 1;
+    std::cout << "Init trig " << TrigIdTmp_ << " " << TrigIdTmp2_ << std::endl;
     treeChain_->GetEntry(0);
     treeChain2_->GetEntry(0);
+    std::cout << "Check trig " << TrigIdTmp_ << " " << TrigIdTmp2_ << std::endl;
 
     std::cout << "Time offset 1: " << time << "s, 2: " << time2 << "s" << std::endl;
 
@@ -115,11 +119,14 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
         if (TrigTime_ > ToAzero_)
         {
             ToAzero_ = TrigTime_;
-            TrigIdNext_ = TrigId_ + 1;
             std::cout << "Trig entry: " << TrigId_ << std::endl;
             break;
         }
     }
+
+    TrigIdNext_ += TrigId_;
+    TrigIdTmp_  += TrigId_;
+
     if (TrigStart_ >= TrigId_)
         TrigStart_ -= TrigId_;
     else
@@ -131,24 +138,25 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
         if (TrigTime2_ > ToAzero2_)
         {
             ToAzero2_ = TrigTime2_;
-            TrigIdNext2_ = TrigId2_ + 1;
             std::cout << "Trig entry2: " << TrigId2_ << std::endl;
             break;
         }
     }
 
+    TrigIdTmp2_ += TrigId2_;
+
     std::cout << "Shifting trig entry by " << TrigStart_ << std::endl;
 
-    std::cout << "Zero time " << ToAzero_*25.0/4096000000 << "us" << std::endl;
-    std::cout << "Zero time2 " << ToAzero2_*25.0/4096000000 << "us" << std::endl;
+    std::cout << "Zero time " << ToAzero_*25.0/4096000000000 << "s" << std::endl;
+    std::cout << "Zero time2 " << ToAzero2_*25.0/4096000000000 << "s" << std::endl;
 
     std::cout << "Create writing file" << std::endl;
     outputName_ = inputName_;
     if (dir_->IsDirectory())
-        outputName_.Append("entangled" + name + "_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
+        outputName_.Append("/entangled" + name + "_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
     else
         outputName_.ReplaceAll(".root", name + "_" + std::to_string(time) + "_" + std::to_string(time2) + "_"+tree+"_processed.root");
-    outputRoot_ = new TFile(outputName_,"RECREATE");
+    outputRoot_ = new TFile(outputName_, "RECREATE");
 
     outputRoot_->cd();
     entTree_ = new TTree("entTree", "entangled data, version 2");
@@ -232,6 +240,7 @@ void Dual::Process()
     for (; entry_ < endEntry; entry_++)
     {
         treeChain_->GetEntry(entry_);
+        treeChain2_->GetEntry(entry2_);
 
         if (maxEntries_ != 0 && entry_ >= startEntry + maxEntries_)
         {
@@ -287,7 +296,7 @@ Long64_t Dual::FindPairs(UInt_t area[4], Long64_t &entry)
         treeChain2_->GetEntry(pair);
 
         // area of incoming photons
-        if ( ( TrigId2_ == (TrigIdNext2_ - 1)) && PositionCheck2(area))
+        if ( ( TrigId2_ == (TrigIdTmp2_ - 1)) && PositionCheck2(area))
         {
             if ( static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) + ToAdiff_ >= static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_))
             && ( static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) + ToAdiff_ - static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_))) < diffToA )
@@ -316,16 +325,23 @@ Long64_t Dual::FindPairs(UInt_t area[4], Long64_t &entry)
 bool Dual::FindEntry(Long64_t &entry2)
 {
     treeChain2_->GetEntry(entry2);
-    TrigDiff2_ = TrigTimeNext2_ - TrigTime2_;
 
-    while(static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) < static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_))
-       && TrigIdNext2_ != TrigId2_
-       && entry2 < Entries2_ )
+    TrigDiff2_ = TrigTimeNext2_ - TrigTime2_;
+    UInt_t trig = TrigId2_;
+
+    while((static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) < static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_)))
+       && (TrigIdTmp2_ > TrigId2_)
+       && (entry2 < Entries2_) )
     {
         treeChain2_->GetEntry(entry2++);
+        if (TrigId2_ != trig)
+        {
+            std::cout << "Skipped trigger when searching starting entry2 " << TrigId2_ << std::endl;
+            trig = TrigId2_;
+        }
     }
 
-    if (TrigIdNext2_ == TrigId2_)
+    if (TrigIdTmp2_ == TrigId2_)
         return false;
     else
         return true;
@@ -335,29 +351,45 @@ void Dual::FindTrig(Long64_t &entry2)
 {
     treeChain2_->GetEntry(entry2);
 
-    while(TrigIdNext2_ != TrigId2_ && entry2 < Entries2_)
+    UInt_t trig = TrigId2_;
+    std::cout << "FT change " << TrigIdTmp2_ << " " << trig << " " << TrigId2_ << std::endl;
+
+    while(TrigIdTmp2_ > TrigId2_ && entry2 < Entries2_)
     {
         treeChain2_->GetEntry(entry2++);
+
+        if (TrigId2_ != trig)
+        {
+            std::cout << "FT Trig2 changed " << TrigIdTmp2_ << " " << trig << " " << TrigId2_ << std::endl;
+            trig = TrigId2_;
+        }
     }
 
-    TrigIdNext2_++;
+    TrigIdTmp2_++;
 }
 
 void Dual::ScanEntry(Long64_t &entry, Long64_t &entry2)
 {
     TrigDiff_ = TrigTimeNext_ - TrigTime_;
 
-    if (TrigIdNext_ <= TrigId_)
+    if (TrigIdTmp_ <= TrigId_)
     {
-        TrigIdNext_++;
+        std::cout << "Entry1 " << entry << " of " << Entries_ << ", with trigger " << TrigId_ << " done!" << std::endl;
+        std::cout << "Entry2 " << entry2 << " of " << Entries2_ << ", with trigger " << TrigId2_ << " done!" << std::endl;
+
+        std::cout << "------------------------------" << std::endl;
+        std::cout << "next/curr " << TrigIdTmp_ << " " << TrigId_ << std::endl;
+        std::cout << "next2/curr2 " << TrigIdTmp2_ << " " << TrigId2_ << std::endl;
+        TrigIdTmp_++;
         FindTrig(entry2);
+        std::cout << "------------------------------" << std::endl;
     }
 
     if (entry % 1000 == 0)
     {
         std::cout << "------------------------------" << std::endl;
-        std::cout << "Entry1 " << entry << " of " << Entries_ << " done!" << std::endl;
-        std::cout << "Entry2 " << entry2 << " of " << Entries2_ << " done!" << std::endl;
+        std::cout << "Entry1 " << entry << " of " << Entries_ << ", with trigger " << TrigId_ << " done!" << std::endl;
+        std::cout << "Entry2 " << entry2 << " of " << Entries2_ << ", with trigger " << TrigId2_ << " done!" << std::endl;
     }
 
     // area of incoming photons + entries within checking range of triggers are ignored

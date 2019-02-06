@@ -110,6 +110,7 @@ private:
 
     UInt_t      TrigId_;
     UInt_t      TrigIdNext_;
+    UInt_t      TrigIdTmp_;
     ULong64_t   TrigWalk_;
     ULong64_t   TrigTime_;
     ULong64_t   TrigTimeNext_;
@@ -123,8 +124,11 @@ private:
     ULong64_t   ToATrigs2_[MAX_HITS];
     UInt_t      ToTs2_[MAX_HITS];
 
+    UInt_t      TrigTest2_;
+
     UInt_t      TrigId2_;
     UInt_t      TrigIdNext2_;
+    UInt_t      TrigIdTmp2_;
     ULong64_t   TrigWalk2_;
     ULong64_t   TrigTime2_;
     ULong64_t   TrigTimeNext2_;

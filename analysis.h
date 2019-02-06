@@ -10,6 +10,8 @@
 
 #include <TGFrame.h>
 
+#include <deque>
+
 #define MAX_HITS  65536      // minimal value for sorting 65536
 #define MAX_FILES 256
 #define ENTRY_LOOP 150
@@ -27,6 +29,12 @@ struct data
     UInt_t      Rows[ENTRY_LOOP*2];
     ULong64_t   ToAs[ENTRY_LOOP*2];
     UInt_t      ToTs[ENTRY_LOOP*2];
+};
+
+struct LTnames
+{
+    TString time;
+    TString name;
 };
 
 class Analysis : public TGMainFrame
