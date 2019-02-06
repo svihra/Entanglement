@@ -85,40 +85,45 @@ Analysis::Analysis()
 //    Spatial();
 //    Fitter();
 //    fileRoot_->Close();
-    if (!Browse())
+    for (int i = 0; i < 4; i++)
     {
-        std::cout << "Failed to load data" << std::endl;
-    }
-    else
-    {
-        can_ = new TCanvas("can","",1200,800);
-        leg_ = new TLegend(0.6, 0.65, 0.89, 0.82);
-        for (Int_t file = 0; file < numberOfFiles_; file++)
+        if (!Browse())
         {
-            if (inputFiles_[file].EndsWith(".root"))
-            {
-                std::cout << "Plotting to single graph" << std::endl;
-                Plotter(inputFiles_[file], file);
-//                std::cout << "Starting Init: " << std::endl;
-//                Comparison(inputFiles_[file]);
-//                Init(inputFiles_[file]);
-//    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
-//                Processing();
-//    //            Entanglement();
-            }
-            else
-            {
-                std::cout << "Invalid file name: " << inputFiles_[file] << std::endl;
-            }
+            std::cout << "Failed to load data" << std::endl;
         }
-        leg_->Draw("same");
-        TString tmpName = inputFiles_[0];
-        tmpName.Replace(tmpName.Last('.'),200,"_overall.png");
-        can_->Print(tmpName);
-        fileRoot_->Close();
-    //    Mapper();
-    //    Correlation();
-
+        else
+        {
+            can_ = new TCanvas("can","",1200,800);
+            leg_ = new TLegend(0.5, 0.65, 0.89, 0.82);
+            for (Int_t file = 0; file < numberOfFiles_; file++)
+            {
+                if (inputFiles_[file].EndsWith(".root"))
+                {
+                    std::cout << "Plotting to single graph" << std::endl;
+                    Plotter(inputFiles_[file], file);
+                    //                std::cout << "Starting Init: " << std::endl;
+                    //                Comparison(inputFiles_[file]);
+                    //                Init(inputFiles_[file]);
+                    //    //            std::cout << "Starting Entanglement for file: " << inputFiles_[file] << std::endl;
+                    //                Processing();
+                    //    //            Entanglement();
+                }
+                else
+                {
+                    std::cout << "Invalid file name: " << inputFiles_[file] << std::endl;
+                }
+            }
+            leg_->Draw("same");
+            TString tmpName = inputFiles_[0];
+            tmpName.Replace(tmpName.Last('.'),200,"_overall.png");
+            can_->Print(tmpName);
+            fileRoot_->Close();
+            //    Mapper();
+            //    Correlation();
+            delete can_;
+            delete leg_;
+            delete fileRoot_;
+        }
     }
 }
 
@@ -152,22 +157,22 @@ void Analysis::Plotter(TString file, Int_t index)
     fileRoot_   = new TFile(file, "READ");
 
     LTnames lentry[16];
-    lentry[0].time = "_175";  lentry[0].name = "A0 B22.5";
-    lentry[1].time = "_575";  lentry[0].name = "A0 B67.5";
-    lentry[2].time = "_975";  lentry[0].name = "A0 B112.5";
-    lentry[3].time = "_1375"; lentry[0].name = "A0 B157.5";
-    lentry[4].time = "_1775"; lentry[0].name = "A90 B22.5";
-    lentry[5].time = "_2175"; lentry[0].name = "A90 B67.5";
-    lentry[6].time = "_2575"; lentry[0].name = "A90 B112.5";
-    lentry[7].time = "_2875"; lentry[0].name = "A90 B157.5";
-    lentry[8].time = "722222"; lentry[0].name = "A0";
-    lentry[9].time = "722222"; lentry[0].name = "A0";
-    lentry[10].time = "722222"; lentry[0].name = "A0";
-    lentry[11].time = "722222"; lentry[0].name = "A0";
-    lentry[12].time = "722222"; lentry[0].name = "A0";
-    lentry[13].time = "722222"; lentry[0].name = "A0";
-    lentry[14].time = "722222"; lentry[0].name = "A0";
-    lentry[15].time = "722222"; lentry[0].name = "A0";
+    lentry[0].time = "_175_";   lentry[0].name  = "A0 B22.5";
+    lentry[1].time = "_575_";   lentry[1].name  = "A0 B67.5";
+    lentry[2].time = "_975_";   lentry[2].name  = "A0 B112.5";
+    lentry[3].time = "_1375_";  lentry[3].name  = "A0 B157.5";
+    lentry[4].time = "_1775_";  lentry[4].name  = "A90 B22.5";
+    lentry[5].time = "_2175_";  lentry[5].name  = "A90 B67.5";
+    lentry[6].time = "_2575_";  lentry[6].name  = "A90 B112.5";
+    lentry[7].time = "_2975_";  lentry[7].name  = "A90 B157.5";
+    lentry[8].time = "_4950_";  lentry[8].name  = "A-45 B22.5";
+    lentry[9].time = "_5350_";  lentry[9].name  = "A-45 B67.5";
+    lentry[10].time = "_5750_"; lentry[10].name = "A-45 B112.5";
+    lentry[11].time = "_6150_"; lentry[11].name = "A-45 B157.5";
+    lentry[12].time = "_6535_"; lentry[12].name = "A45 B22.5";
+    lentry[13].time = "_6935_"; lentry[13].name = "A45 B67.5";
+    lentry[14].time = "_7320_"; lentry[14].name = "A45 B112.5";
+    lentry[15].time = "_7720_"; lentry[15].name = "A45 B157.5";
 //    TDirectory* dir = fileRoot_->GetDirectory("entry_0x0_0x0");
 
     TTree* tmpTree = reinterpret_cast<TTree *>(fileRoot_->Get("entTree"));
@@ -179,13 +184,13 @@ void Analysis::Plotter(TString file, Int_t index)
     TF1* func = new TF1("fit","[0] + ([1]/([3]*sqrt(2*3.1415)))*exp((-0.5)*pow((x-[2])/[3],2)) + ([4]/([6]*sqrt(2*3.1415)))*exp(-0.5*pow((x-[5])/[6],2))");
 
     func->SetParLimits(0,0,400);
-    func->SetParLimits(1,0,154);
-    func->SetParLimits(2,-2090,-2050);
-    func->SetParLimits(3,15,150);
+    func->SetParLimits(1,0,1500);
+    func->SetParLimits(2,-2090,-2055);
+    func->SetParLimits(3,10,150);
     func->SetParLimits(4,0,1e8);
     func->SetParLimits(5,-2090,-2050);
     func->SetParLimits(6,1,20);
-    func->SetParameters(50,800,-2080,50,7000,-2070,8);
+    func->SetParameters(20,500,-2075,25,8000,-2070,5);
 
     TH1D* hist = reinterpret_cast<TH1D*>(gDirectory->Get("toa"));
     func->SetNpx(3000);
@@ -198,7 +203,7 @@ void Analysis::Plotter(TString file, Int_t index)
     hist->GetXaxis()->SetRangeUser(-2140,-2000);
     hist->GetYaxis()->SetTitle("#entries");
     hist->GetYaxis()->SetTitleOffset(static_cast<Float_t>(1.4));
-    hist->GetYaxis()->SetRangeUser(0, 800);
+    hist->GetYaxis()->SetRangeUser(0, 900);
     hist->GetXaxis()->SetTitleSize(static_cast<Float_t>(0.035));
     hist->GetYaxis()->SetTitleSize(static_cast<Float_t>(0.035));
     hist->GetXaxis()->SetLabelSize(static_cast<Float_t>(0.03 ));
@@ -211,21 +216,27 @@ void Analysis::Plotter(TString file, Int_t index)
     func->SetRange(-2140,-2000);
 
 //    TString tmpName(file(file.Last('/')+5,9));
-    TString tmpName(file(file.Last('-')+7,5));
-//    for (int i = 0; i < 8; i++)
-//    {
-//        if (tmpName.Contains(lentry[i].time))
-//        {
-//            tmpName.Replace(0,200,"");//lentry[i].time,lentry[i].name);
-//            tmpName.Append(lentry[i].name);
-//        }
-//    }
+    TString tmpName(file(file.Last('-')+7,6));
+    for (int i = 0; i < 16; i++)
+    {
+        if (tmpName.Contains(lentry[i].time, TString::ECaseCompare::kIgnoreCase))
+        {
+            tmpName.Replace(0,200,"");//lentry[i].time,lentry[i].name);
+            tmpName.Append(lentry[i].name);
+        }
+    }
 //    tmpName.Replace(tmpName.First('_'),1,"#circ, ");
 //    tmpName.Replace(tmpName.First('A'),1,"#alpha = ");
 //    tmpName.Replace(tmpName.First('B'),2,"#beta = ");
 //    tmpName.Append("#circ ");
-    tmpName.Append(", N = " + std::to_string(func->GetParameter(4)+func->GetParameter(1)));
-    tmpName.Append(", #sigma = " + std::to_string(func->GetParameter(6)));
+    tmpName.Append(TString::Format(", N = %d", static_cast<int>(func->GetParameter(4)+func->GetParameter(1))));
+    tmpName.Append(TString::Format(" +- %d", static_cast<int>(std::sqrt(std::pow(func->GetParError(4),2)+pow(func->GetParError(1),2)))));
+    tmpName.Append(TString::Format(", #sigma = %.3f", func->GetParameter(6)));
+    tmpName.Append(TString::Format(" +- %.3f", func->GetParError(6)));
+//    tmpName.Append(", N = " + std::to_string(func->GetParameter(4)+func->GetParameter(1)));
+//    tmpName.Append(" +- " + std::to_string(std::sqrt(std::pow(func->GetParError(4),2)+pow(func->GetParameter(1),2))));
+//    tmpName.Append(", #sigma = " + std::to_string(func->GetParameter(6)));
+//    tmpName.Append(" +- " + std::to_string(std::pow(func->GetParError(6),2)));
     leg_->AddEntry(func,tmpName,"l");
     hist->Draw("P same");
     func->Draw("same");

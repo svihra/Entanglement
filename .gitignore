@@ -1,3 +1,5 @@
 *.user
 *.o
 Makefile
+*.pdf
+*.ipynb
