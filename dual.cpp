@@ -250,9 +250,9 @@ void Dual::Process()
 
         if ((TrigId_ - start) < TrigStart_)
             continue;
-        if ((TrigId_ - start) > 300 + TrigStart_)
+        if ((TrigId_ - start) > 250 + TrigStart_)
         {
-            std::cout << "reached 300s from " << TrigStart_ << std::endl;
+            std::cout << "reached 250s from " << TrigStart_ << std::endl;
             break;
         }
         ScanEntry(entry_, entry2_);

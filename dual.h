@@ -143,8 +143,8 @@ private:
 
     Int_t       numberOfFiles_;
 
-    UInt_t area1All_[4] = {LAB_X_LOW, LAB_X_HIGH, LAB_Y_LOW, LAB_Y_HIGH};
-    UInt_t area2All_[4] = {TOWER_X_LOW, TOWER_X_HIGH, TOWER_Y_LOW, TOWER_Y_HIGH};
+    UInt_t area2All_[4] = {LAB_X_LOW, LAB_X_HIGH, LAB_Y_LOW, LAB_Y_HIGH};
+    UInt_t area1All_[4] = {TOWER_X_LOW, TOWER_X_HIGH, TOWER_Y_LOW, TOWER_Y_HIGH};
 
 };
 
