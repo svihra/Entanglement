@@ -34,7 +34,7 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
     std::cout << "Setting starting second as " << start << "s" << std::endl;
     TrigStart_ = start;
 
-    ToAdiff_ = static_cast<ULong64_t>(163840 * 2.05); // converted to clocks - measured diff 2.05us
+    ToAdiff_ = static_cast<ULong64_t>(163840 * 2.06); // converted to clocks - measured diff 2.05us
 
     std::cout << "Setting max entries as " << maxEntries << std::endl;
     maxEntries_ = maxEntries;
@@ -298,17 +298,17 @@ Long64_t Dual::FindPairs(UInt_t area[4], Long64_t &entry)
         // area of incoming photons
         if ( ( TrigId2_ == (TrigIdTmp2_ - 1)) && PositionCheck2(area))
         {
-            if ( static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) + ToAdiff_ >= static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_))
-            && ( static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) + ToAdiff_ - static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_))) < diffToA )
+            if ( static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_)) + ToAdiff_ >= static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_))
+            && ( static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_)) + ToAdiff_ - static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_))) < diffToA )
             {
-                diffToA = static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) + ToAdiff_ - static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_));
+                diffToA = static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_)) + ToAdiff_ - static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_));
                 nextEntry = pair;
                 bFound = kTRUE;
             }
-            else if ( static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_)) + ToAdiff_ < static_cast<ULong64_t>(ToATrigs_[0] *FindDelta(TrigDiff_ ))
-                 && ( static_cast<ULong64_t>(ToATrigs_[0] *FindDelta(TrigDiff_ )) - ToAdiff_ - static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_))) < diffToA )
+            else if ( static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_)) + ToAdiff_ < static_cast<ULong64_t>(ToATrigs2_[0] *FindDelta(TrigDiff2_ ))
+                 && ( static_cast<ULong64_t>(ToATrigs2_[0] *FindDelta(TrigDiff2_ )) - ToAdiff_ - static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_))) < diffToA )
             {
-                diffToA = static_cast<ULong64_t>(ToATrigs_[0] *FindDelta(TrigDiff_ )) - ToAdiff_ - static_cast<ULong64_t>(ToATrigs2_[0]*FindDelta(TrigDiff2_));
+                diffToA = static_cast<ULong64_t>(ToATrigs2_[0] *FindDelta(TrigDiff2_ )) - ToAdiff_ - static_cast<ULong64_t>(ToATrigs_[0]*FindDelta(TrigDiff_));
                 nextEntry = pair;
                 bFound = kTRUE;
             }
