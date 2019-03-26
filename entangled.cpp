@@ -19,6 +19,8 @@ Entangled::Entangled(TString fileName, TString tree, UInt_t maxEntries, Int_t st
 
         std::cout << "Starting entanglement processing: " << std::endl;
         Process();
+
+        outputRoot_->Write();
         outputRoot_->Close();
     }
     else
@@ -108,8 +110,6 @@ Bool_t Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t star
 
     Entries_ = treeChain_->GetEntries();
 
-    std::cout << "Create writing file" << std::endl;
-    outputName_ = inputName_;
     std::cout << "Create writing file" << std::endl;
     outputName_ = inputName_;
 
@@ -211,6 +211,8 @@ Bool_t Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t star
     entTreeAll_->Branch("Row2" ,     Rows2_,"Row2[Size2]/i");
     entTreeAll_->Branch("ToT2" ,     ToTs2_,"ToT2[Size2]/i");
     entTreeAll_->Branch("ToA2" ,     ToAs2_,"ToA2[Size2]/l");
+
+    return kTRUE;
 }
 
 Bool_t Entangled::PositionCheck(UInt_t area[4])
@@ -223,7 +225,7 @@ Bool_t Entangled::PositionCheck(UInt_t area[4])
 
 Long64_t Entangled::FindPairs(UInt_t area[4], Long64_t &entry, bool inverse)
 {
-    ULong64_t diffToA = (ULong64_t) (163.84 * MAX_DIFF);
+    ULong64_t diffToA = static_cast<ULong64_t>(163.84 * MAX_DIFF);
     Bool_t bFound   = kFALSE;
     Long64_t nextEntry = 0;
 
@@ -543,8 +545,6 @@ void Entangled::PrintCsv()
             csvFile << ent->GetBinCenter(bin) << "," << ent->GetBinContent(bin) << "," << (single1->GetBinContent(bin)+single2->GetBinContent(bin)) << "\n";
     }
     csvFile.close();
-
-    outputRoot_->Write();
 }
 
 void Entangled::Process()
