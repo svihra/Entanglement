@@ -82,8 +82,8 @@ int main(int argc, char **argv)
         }
     }
     if (bash)
-//        new Entangled(file, tree, maxEntries, startPart, parts);
-        new Dual(file, file2, diff, zero, zero2, tree, maxEntries, name);
+        new Entangled(file, tree, maxEntries, startPart, parts);
+//        new Dual(file, file2, diff, zero, zero2, tree, maxEntries, name);
     else
     {
         TApplication theApp("App",&argc,argv);
