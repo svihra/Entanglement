@@ -22,21 +22,6 @@
 #define CUT_TOT         0
 #define CUT_SIZE        1
 
-//// lab I
-//#define LAB_X_SIZE  20
-//#define LAB_X_LOW   105
-//#define LAB_X_HIGH  (LAB_X_LOW + LAB_X_SIZE)
-//#define LAB_Y_SIZE  20
-//#define LAB_Y_LOW   108
-//#define LAB_Y_HIGH  (LAB_Y_LOW + LAB_Y_SIZE)
-
-//// tower II
-//#define TOWER_X_SIZE  20
-//#define TOWER_X_LOW   108
-//#define TOWER_X_HIGH  (TOWER_X_LOW + TOWER_X_SIZE)
-//#define TOWER_Y_SIZE  20
-//#define TOWER_Y_LOW   90
-//#define TOWER_Y_HIGH  (TOWER_Y_LOW + TOWER_Y_SIZE)
 // lab I
 #define LAB_X_SIZE  20
 #define LAB_X_LOW   107

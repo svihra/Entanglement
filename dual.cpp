@@ -60,9 +60,6 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
 
     std::cout << "Reading chain1" << std::endl;
 
-//    fileRoot_   = new TFile(inputName_, "READ");
-//    std::cout << "Getting tree1" << std::endl;
-//    tree_ = reinterpret_cast<TTree *>(fileRoot_->Get(tree));
     std::cout << " - setting branches" << std::endl;
     treeChain_->SetBranchAddress("Size"    , &Size_);
     treeChain_->SetBranchAddress("Col"     ,  Cols_);
@@ -74,16 +71,11 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
     treeChain_->SetBranchAddress("TrigTime", &TrigTime_);
     treeChain_->SetBranchAddress("TrigTimeNext", &TrigTimeNext_);
 
-//    timeTree_ = reinterpret_cast<TTree *>(fileRoot_->Get("timetree"));
-//    std::cout << " - setting branches" << std::endl;
     timeChain_->SetBranchAddress("TrigTime", &TrigWalk_);
 
     Entries_ = treeChain_->GetEntries();
 
     std::cout << "Reading chain2" << std::endl;
-//    fileRoot2_   = new TFile(inputName2_, "READ");
-//    std::cout << "Getting tree2" << std::endl;
-//    tree2_ = reinterpret_cast<TTree *>(fileRoot2_->Get(tree));
     std::cout << " - setting branches" << std::endl;
     treeChain2_->SetBranchAddress("Size", &Size2_);
     treeChain2_->SetBranchAddress("Col",  Cols2_);
@@ -95,8 +87,6 @@ Bool_t Dual::Init(TString file, TString file2, UInt_t start, Int_t time, Int_t t
     treeChain2_->SetBranchAddress("TrigTime", &TrigTime2_);
     treeChain2_->SetBranchAddress("TrigTimeNext", &TrigTimeNext2_);
 
-//    timeChain2_ = reinterpret_cast<TTree *>(fileRoot2_->Get("timetree"));
-//    std::cout << " - setting branches" << std::endl;
     timeChain2_->SetBranchAddress("TrigTime", &TrigWalk2_);
 
     Entries2_ = treeChain2_->GetEntries();

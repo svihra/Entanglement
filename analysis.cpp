@@ -159,23 +159,42 @@ void Analysis::Plotter(TString file, Int_t index)
 
     LTnames lentry[16];
 
+// bell long data
+    lentry[0].time =  "_160_";   lentry[0].name  = "A0 B22.5";
+    lentry[1].time =  "_532_";   lentry[1].name  = "A0 B67.5";
+    lentry[2].time =  "_896_";   lentry[2].name  = "A0 B112.5";
+    lentry[3].time =  "_1260_";  lentry[3].name  = "A0 B157.5";
+    lentry[4].time =  "_1696_";  lentry[4].name  = "A90 B22.5";
+    lentry[5].time =  "_2085_";  lentry[5].name  = "A90 B67.5";
+    lentry[6].time =  "_2452_";  lentry[6].name  = "A90 B112.5";
+    lentry[7].time =  "_2835_";  lentry[7].name  = "A90 B157.5";
+    lentry[8].time =  "_16_";  lentry[8].name  = "A-45 B22.5";
+    lentry[9].time =  "_399_";  lentry[9].name  = "A-45 B67.5";
+    lentry[10].time = "_763_"; lentry[10].name = "A-45 B112.5";
+    lentry[11].time = "_1135_"; lentry[11].name = "A-45 B157.5";
+    lentry[12].time = "_1635_"; lentry[12].name = "A45 B22.5";
+    lentry[13].time = "_2021_"; lentry[13].name = "A45 B67.5";
+    lentry[14].time = "_2385_"; lentry[14].name = "A45 B112.5";
+    lentry[15].time = "_2746_"; lentry[15].name = "A45 B157.5";
+
+
 // bell2 data
-    lentry[0].time = "_350_";   lentry[0].name  = "A0 B22.5";
-    lentry[1].time = "_750_";   lentry[1].name  = "A0 B67.5";
-    lentry[2].time = "_1100_";   lentry[2].name  = "A0 B112.5";
-    lentry[3].time = "_1470_";  lentry[3].name  = "A0 B157.5";
-    lentry[4].time = "_2100_";  lentry[4].name  = "A90 B22.5";
-    lentry[5].time = "_2450_";  lentry[5].name  = "A90 B67.5";
-    lentry[6].time = "_2830_";  lentry[6].name  = "A90 B112.5";
-    lentry[7].time = "_3210_";  lentry[7].name  = "A90 B157.5";
-    lentry[8].time = "_3640_";  lentry[8].name  = "A-45 B22.5";
-    lentry[9].time = "_3980_";  lentry[9].name  = "A-45 B67.5";
-    lentry[10].time = "_4350_"; lentry[10].name = "A-45 B112.5";
-    lentry[11].time = "_4840_"; lentry[11].name = "A-45 B157.5";
-    lentry[12].time = "_5280_"; lentry[12].name = "A45 B22.5";
-    lentry[13].time = "_5640_"; lentry[13].name = "A45 B67.5";
-    lentry[14].time = "_6000_"; lentry[14].name = "A45 B112.5";
-    lentry[15].time = "_6350_"; lentry[15].name = "A45 B157.5";
+//    lentry[0].time = "_350_";   lentry[0].name  = "A0 B22.5";
+//    lentry[1].time = "_750_";   lentry[1].name  = "A0 B67.5";
+//    lentry[2].time = "_1100_";   lentry[2].name  = "A0 B112.5";
+//    lentry[3].time = "_1470_";  lentry[3].name  = "A0 B157.5";
+//    lentry[4].time = "_2100_";  lentry[4].name  = "A90 B22.5";
+//    lentry[5].time = "_2450_";  lentry[5].name  = "A90 B67.5";
+//    lentry[6].time = "_2830_";  lentry[6].name  = "A90 B112.5";
+//    lentry[7].time = "_3210_";  lentry[7].name  = "A90 B157.5";
+//    lentry[8].time = "_3640_";  lentry[8].name  = "A-45 B22.5";
+//    lentry[9].time = "_3980_";  lentry[9].name  = "A-45 B67.5";
+//    lentry[10].time = "_4350_"; lentry[10].name = "A-45 B112.5";
+//    lentry[11].time = "_4840_"; lentry[11].name = "A-45 B157.5";
+//    lentry[12].time = "_5280_"; lentry[12].name = "A45 B22.5";
+//    lentry[13].time = "_5640_"; lentry[13].name = "A45 B67.5";
+//    lentry[14].time = "_6000_"; lentry[14].name = "A45 B112.5";
+//    lentry[15].time = "_6350_"; lentry[15].name = "A45 B157.5";
 
 // BCS data
 //    lentry[0].time = "_175_";   lentry[0].name  = "A0 B22.5";
@@ -202,22 +221,26 @@ void Analysis::Plotter(TString file, Int_t index)
     tmpTree->Draw("((ToATrig2[0]*(16384e7)/TrigDiff2)-(ToATrig[0]*(16384e7)/TrigDiff))*25.0/4096>>toa(2001,514.84375,3641.40625)","ID==0","goff");
 //    tmpTree->Draw("(ToA[0]-ToA2[0])*25.0/4096>>toa(201,-156.25,156.25)","ID==0","goff");
 
-//    TF1* func = new TF1("fit","[0] + ([1]/([3]*sqrt(2*3.1415)))*exp((-0.5)*pow((x-[2])/[3],2)) + ([4]/([6]*sqrt(2*3.1415)))*exp(-0.5*pow((x-[5])/[6],2))");
-    TF1* func = new TF1("fit","[0]");
+    // dgauss
+    TF1* func = new TF1("fit","[0] + ([1]/([3]*sqrt(2*3.1415)))*exp((-0.5)*pow((x-[2])/[3],2)) + ([4]/([6]*sqrt(2*3.1415)))*exp(-0.5*pow((x-[5])/[6],2))");
+
+    // const
+//    TF1* func = new TF1("fit","[0]");
+//    func->SetParameter(0,10);
 
     func->SetParLimits(0,0,400);
-//    func->SetParLimits(1,0,1500);
-//    func->SetParLimits(2,2055,2090);
-//    func->SetParLimits(3,10,150);
-//    func->SetParLimits(4,0,1e8);
-//    func->SetParLimits(5,2050, 2090);
-//    func->SetParLimits(6,1,20);
-//    func->SetParameters(20,500,2075,25,8000,2070,5);
-    func->SetParameter(0,10);
+    func->SetParLimits(1,0,1500);
+    func->SetParLimits(2,2055,2090);
+    func->SetParLimits(3,10,150);
+    func->SetParLimits(4,0,1e8);
+    func->SetParLimits(5,2050, 2090);
+    func->SetParLimits(6,1,20);
+    func->SetParameters(20,500,2075,25,8000,2070,5);
 
     TH1D* hist = reinterpret_cast<TH1D*>(gDirectory->Get("toa"));
     func->SetNpx(3000);
-    hist->Fit(func,"0");
+    hist->Fit(func);
+//    hist->Fit(func,"0");
 
     can_->cd();
     hist->SetTitle("");
@@ -240,7 +263,8 @@ void Analysis::Plotter(TString file, Int_t index)
 
 //    TString tmpName(file(file.Last('/')+5,9));
 //    TString tmpName(file(file.Last('-')+7,6));
-    TString tmpName(file(file.First('_'),6));
+    TString tmpName2(file(file.First('_')+1,200));
+    TString tmpName(tmpName2(tmpName2.First('_'),6));
     for (int i = 0; i < 16; i++)
     {
         if (tmpName.Contains(lentry[i].time, TString::ECaseCompare::kIgnoreCase))
@@ -250,25 +274,27 @@ void Analysis::Plotter(TString file, Int_t index)
         }
     }
 
-    double xmin = 2060;
-    double xmax = 2080;
-    TAxis *axis = hist->GetXaxis();
-    int bmin = axis->FindBin(xmin);
-    int bmax = axis->FindBin(xmax);
-    double error;
-    double integral = hist->IntegralAndError(bmin,bmax,error);
+//    // constant
+//    double xmin = 2060;
+//    double xmax = 2080;
+//    TAxis *axis = hist->GetXaxis();
+//    int bmin = axis->FindBin(xmin);
+//    int bmax = axis->FindBin(xmax);
+//    double error;
+//    double integral = hist->IntegralAndError(bmin,bmax,error);
+//    tmpName.Append(TString::Format(", C = %d +- %d", static_cast<int>(func->GetParameter(0)), static_cast<int>(func->GetParError(0))));
+//    tmpName.Append(TString::Format(", N = %.2f +- %.2f", integral - ((bmax-bmin)*func->GetParameter(0)), error));
 
 //    tmpName.Replace(tmpName.First('_'),1,"#circ, ");
 //    tmpName.Replace(tmpName.First('A'),1,"#alpha = ");
 //    tmpName.Replace(tmpName.First('B'),2,"#beta = ");
 //    tmpName.Append("#circ ");
-    tmpName.Append(TString::Format(", C = %d +- %d", static_cast<int>(func->GetParameter(0)), static_cast<int>(func->GetParError(0))));
-    tmpName.Append(TString::Format(", N = %.2f +- %.2f", integral - ((bmax-bmin)*func->GetParameter(0)), error));
 
-//    tmpName.Append(TString::Format(", N = %d", static_cast<int>(func->GetParameter(4)+func->GetParameter(1))));
-//    tmpName.Append(TString::Format(" +- %d", static_cast<int>(std::sqrt(std::pow(func->GetParError(4),2)+pow(func->GetParError(1),2)))));
-//    tmpName.Append(TString::Format(", #sigma = %.3f", func->GetParameter(6)));
-//    tmpName.Append(TString::Format(" +- %.3f", func->GetParError(6)));
+
+    tmpName.Append(TString::Format(", N = %d", static_cast<int>(func->GetParameter(4)+func->GetParameter(1))));
+    tmpName.Append(TString::Format(" +- %d", static_cast<int>(std::sqrt(std::pow(func->GetParError(4),2)+pow(func->GetParError(1),2)))));
+    tmpName.Append(TString::Format(", #sigma = %.3f", func->GetParameter(6)));
+    tmpName.Append(TString::Format(" +- %.3f", func->GetParError(6)));
 
 //    tmpName.Append(", N = " + std::to_string(func->GetParameter(4)+func->GetParameter(1)));
 //    tmpName.Append(" +- " + std::to_string(std::sqrt(std::pow(func->GetParError(4),2)+pow(func->GetParameter(1),2))));

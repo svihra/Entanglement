@@ -10,7 +10,9 @@
 
 Entangled::Entangled(TString fileName, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts)
 {
-    if (fileName.EndsWith(".root") && !fileName.EndsWith("_processed.root"))
+    dir_  = new TSystemFile(fileName, fileName);
+
+    if (dir_->IsDirectory() || (fileName.EndsWith(".root")  && !fileName.EndsWith("_processed.root")))
     {
         std::cout << "Starting init: " << std::endl;
         Init(fileName, tree, maxEntries, startEntryPart, parts);
@@ -43,7 +45,45 @@ Entangled::~Entangled()
     }
 }
 
-void Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts)
+
+Bool_t Entangled::AddFiles(TSystemFile* dir, TChain* chainDat, TChain* chainTime)
+{
+    TString name = dir->GetName();
+    if (dir->IsDirectory())
+    {
+        TSystemDirectory folder(name,name);
+        std::cout << "Directory: " << name << std::endl;
+        TList *files = folder.GetListOfFiles();
+        if (files)
+        {
+            files->Sort(kSortAscending);
+            TSystemFile *file;
+            TString fname;
+            TIter next(files);
+            while ((file=reinterpret_cast<TSystemFile*>(next())))
+            {
+                fname = file->GetName();
+                if (!file->IsDirectory() && fname.EndsWith(".root") && !fname.EndsWith("processed.root"))
+                {
+                    std::cout << fname << " at " << name << std::endl;
+                    chainDat->Add(name + "/" + fname);
+                    chainTime->Add(name + "/" + fname);
+                }
+            }
+        }
+        else
+            return kFALSE;
+    }
+    else
+    {
+        std::cout << "File: " << name << std::endl;
+        chainDat->Add(name);
+        chainTime->Add(name);
+    }
+    return kTRUE;
+}
+
+Bool_t Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t startEntryPart, Int_t parts)
 {
     std::cout << "Setting max entries as " << maxEntries << std::endl;
     maxEntries_ = maxEntries;
@@ -51,35 +91,45 @@ void Entangled::Init(TString file, TString tree, UInt_t maxEntries, Int_t startE
     std::cout << "Reading file" << std::endl;
     inputName_ = file;
 
-    std::cout << "Reading tree" << std::endl;
-    fileRoot_   = new TFile(inputName_, "READ");
-    std::cout << "Getting tree" << std::endl;
-    rawTree_ = (TTree *) fileRoot_->Get(tree);
+    treeChain_  = new TChain(tree);
+    timeChain_  = new TChain("timetree");
+
+    if (!AddFiles(dir_, treeChain_, timeChain_))
+        return kFALSE;
+
+    std::cout << "Reading chain1" << std::endl;
+
     std::cout << " - setting branches" << std::endl;
-    rawTree_->SetBranchAddress("Size", &Size_);
-    rawTree_->SetBranchAddress("Col",  Cols_);
-    rawTree_->SetBranchAddress("Row",  Rows_);
-    rawTree_->SetBranchAddress("ToT",  ToTs_);
-    rawTree_->SetBranchAddress("ToA",  ToAs_);
+    treeChain_->SetBranchAddress("Size", &Size_);
+    treeChain_->SetBranchAddress("Col",  Cols_);
+    treeChain_->SetBranchAddress("Row",  Rows_);
+    treeChain_->SetBranchAddress("ToT",  ToTs_);
+    treeChain_->SetBranchAddress("ToA",  ToAs_);
 
-    Entries_ = rawTree_->GetEntries();
+    Entries_ = treeChain_->GetEntries();
 
+    std::cout << "Create writing file" << std::endl;
+    outputName_ = inputName_;
     std::cout << "Create writing file" << std::endl;
     outputName_ = inputName_;
 
     Part_ = startEntryPart;
     Parts_ = parts;
+    TString tmpString;
     if (Part_ == -1)
     {
-        outputName_.ReplaceAll(".root","_"+tree+"_processed.root");
+        tmpString = "_processed.root";
     }
     else
     {
-        TString tmpOutput;
-        tmpOutput.Form("_%d_%d_processed.root", Part_, Parts_-1);
-        outputName_.ReplaceAll(".root","_"+tree+tmpOutput);
+        tmpString.Form("_%d_%d_processed.root", Part_, Parts_-1);
     }
-    outputRoot_ = new TFile(outputName_,"RECREATE");
+
+    if (dir_->IsDirectory())
+        outputName_.Append("/entangled_" + tree + tmpString);
+    else
+        outputName_.ReplaceAll(".root", "_" + tree + tmpString);
+    outputRoot_ = new TFile(outputName_, "RECREATE");
 
     id_         = 0;
     mainEntry_  = 0;
@@ -171,19 +221,18 @@ Bool_t Entangled::PositionCheck(UInt_t area[4])
         return kFALSE;
 }
 
-UInt_t Entangled::FindPairs(UInt_t area[4], Int_t &entry, bool inverse)
+Long64_t Entangled::FindPairs(UInt_t area[4], Long64_t &entry, bool inverse)
 {
     ULong64_t diffToA = (ULong64_t) (163.84 * MAX_DIFF);
     Bool_t bFound   = kFALSE;
-    UInt_t nextEntry;
+    Long64_t nextEntry = 0;
 
     // find pairs
-    for (Int_t pair = std::max(entry - ENTRY_LOOP, 0); pair < std::min(entry + ENTRY_LOOP, Entries_); pair++)
+    for (Long64_t pair = std::max(entry - ENTRY_LOOP, static_cast<Long64_t>(0)); pair < std::min(entry + ENTRY_LOOP, Entries_); pair++)
     {
-        rawTree_->GetEntry(pair);
+        treeChain_->GetEntry(pair);
         if (pair == entry)
         {
-//            bSmaller = kFALSE;
             continue;
         }
 
@@ -227,13 +276,14 @@ UInt_t Entangled::FindPairs(UInt_t area[4], Int_t &entry, bool inverse)
     return 0;
 }
 
-void Entangled::ScanEntry(Int_t &entry)
+void Entangled::ScanEntry(Long64_t &entry)
 {
-    rawTree_->GetEntry(entry);
+    treeChain_->GetEntry(entry);
     if (entry % 1000 == 0) std::cout << "Entry " << entry << " of " << Entries_ << " done!" << std::endl;
 
     // area of incoming photons
-    if ( PositionCheck(area1All_) || PositionCheck(area2All_))
+    if (PositionCheck(area1All_))
+//    if ( PositionCheck(area1All_) || PositionCheck(area2All_))
     {
         mainEntry_ = entry;
         Size2_ = Size_;
@@ -245,93 +295,93 @@ void Entangled::ScanEntry(Int_t &entry)
             ToTs2_[subentry] = ToTs_[subentry];
         }
 
-        Int_t globalX1 = (Cols2_[0] - X1_LOW) / (X1_SIZE/X1_CUT);
-        Int_t globalY1 = (Rows2_[0] - Y1_LOW) / (Y1_SIZE/Y1_CUT);
-        Int_t globalX2 = (Cols2_[0] - X2_LOW) / (X2_SIZE/X2_CUT);
-        Int_t globalY2 = (Rows2_[0] - Y2_LOW) / (Y2_SIZE/Y2_CUT);
-
-        if (PositionCheck(area1All_))
+        nextEntry_ = FindPairs(area2All_,entry);
+        if (nextEntry_ != 0)
         {
-            if ((globalX1 >= 0 && globalX1 < X1_CUT) && (globalY1 >= 0 && globalY1 < Y1_CUT))
-            {
-                for (Int_t x2 = 0; x2 < X2_CUT; x2++)
-                {
-                    for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
-                    {
-                        nextEntry_ = FindPairs(area2_[x2][y2],entry);
-                        if (nextEntry_ != 0)
-                        {
-                            id_ = 0;
-                            rawTree_->GetEntry(nextEntry_);
-                            entTree_[globalX1][globalY1][x2][y2]->Fill();
-                        }
-                    }
-                }
-            }
-
-            nextEntry_ = FindPairs(area2All_,entry);
-            if (nextEntry_ != 0)
-            {
-                id_ = 0;
-                rawTree_->GetEntry(nextEntry_);
-                entTreeAll_->Fill();
-            }
-
-            if ((globalX1 >= 0 && globalX1 < X1_CUT) && (globalY1 >= 0 && globalY1 < Y1_CUT))
-            {
-                for (Int_t x1 = 0; x1 < X1_CUT; x1++)
-                {
-                    for (Int_t y1 = 0; y1 < Y1_CUT; y1++)
-                    {
-                        nextEntry_ = FindPairs(area1_[x1][y1],entry);
-                        if (nextEntry_ != 0)
-                        {
-                            id_ = 1;
-                            rawTree_->GetEntry(nextEntry_);
-                            entTree_[globalX1][globalY1][x1][y1]->Fill();
-                        }
-                    }
-                }
-            }
-
-            nextEntry_ = FindPairs(area1All_,entry);
-            if (nextEntry_ != 0)
-            {
-                id_ = 1;
-                rawTree_->GetEntry(nextEntry_);
-                entTreeAll_->Fill();
-            }
-
-        }
-        else
-        {
-            if ((globalX2 >= 0 && globalX2 < X2_CUT) && (globalY2 >= 0 && globalY2 < Y2_CUT))
-            {
-                for (Int_t x2 = 0; x2 < X2_CUT; x2++)
-                {
-                    for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
-                    {
-                        nextEntry_ = FindPairs(area2_[x2][y2],entry);
-                        if (nextEntry_ != 0)
-                        {
-                            id_ = 2;
-                            rawTree_->GetEntry(nextEntry_);
-                            entTree_[globalX2][globalY2][x2][y2]->Fill();
-                        }
-                    }
-                }
-            }
-
-            nextEntry_ = FindPairs(area2All_,entry);
-            if (nextEntry_ != 0)
-            {
-                id_ = 2;
-                rawTree_->GetEntry(nextEntry_);
-                entTreeAll_->Fill();
-            }
-
+            id_ = 0;
+            treeChain_->GetEntry(nextEntry_);
+            entTreeAll_->Fill();
         }
     }
+
+//        Int_t globalX1 = (Cols2_[0] - X1_LOW) / (X1_SIZE/X1_CUT);
+//        Int_t globalY1 = (Rows2_[0] - Y1_LOW) / (Y1_SIZE/Y1_CUT);
+//        Int_t globalX2 = (Cols2_[0] - X2_LOW) / (X2_SIZE/X2_CUT);
+//        Int_t globalY2 = (Rows2_[0] - Y2_LOW) / (Y2_SIZE/Y2_CUT);
+
+//        if (PositionCheck(area1All_))
+//        {
+//        if ((globalX1 >= 0 && globalX1 < X1_CUT) && (globalY1 >= 0 && globalY1 < Y1_CUT))
+//        {
+//            for (Int_t x2 = 0; x2 < X2_CUT; x2++)
+//            {
+//                for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
+//                {
+//                    nextEntry_ = FindPairs(area2_[x2][y2],entry);
+//                    if (nextEntry_ != 0)
+//                    {
+//                        id_ = 0;
+//                        treeChain_->GetEntry(nextEntry_);
+//                        entTree_[globalX1][globalY1][x2][y2]->Fill();
+//                    }
+//                }
+//            }
+//        }
+//            if ((globalX1 >= 0 && globalX1 < X1_CUT) && (globalY1 >= 0 && globalY1 < Y1_CUT))
+//            {
+//                for (Int_t x1 = 0; x1 < X1_CUT; x1++)
+//                {
+//                    for (Int_t y1 = 0; y1 < Y1_CUT; y1++)
+//                    {
+//                        nextEntry_ = FindPairs(area1_[x1][y1],entry);
+//                        if (nextEntry_ != 0)
+//                        {
+//                            id_ = 1;
+//                            treeChain_->GetEntry(nextEntry_);
+//                            entTree_[globalX1][globalY1][x1][y1]->Fill();
+//                        }
+//                    }
+//                }
+//            }
+
+//            nextEntry_ = FindPairs(area1All_,entry);
+//            if (nextEntry_ != 0)
+//            {
+//                id_ = 1;
+//                treeChain_->GetEntry(nextEntry_);
+//                entTreeAll_->Fill();
+//            }
+
+//        }
+//        else
+//        {
+//            if ((globalX2 >= 0 && globalX2 < X2_CUT) && (globalY2 >= 0 && globalY2 < Y2_CUT))
+//            {
+//                for (Int_t x2 = 0; x2 < X2_CUT; x2++)
+//                {
+//                    for (Int_t y2 = 0; y2 < Y2_CUT; y2++)
+//                    {
+//                        nextEntry_ = FindPairs(area2_[x2][y2],entry);
+//                        if (nextEntry_ != 0)
+//                        {
+//                            id_ = 2;
+//                            treeChain_->GetEntry(nextEntry_);
+//                            entTree_[globalX2][globalY2][x2][y2]->Fill();
+//                        }
+//                    }
+//                }
+//            }
+
+//            nextEntry_ = FindPairs(area2All_,entry);
+//            if (nextEntry_ != 0)
+//            {
+//                id_ = 2;
+//                treeChain_->GetEntry(nextEntry_);
+//                entTreeAll_->Fill();
+//            }
+
+//        }
+//    }
 }
 
 void Entangled::PrintCsv()
@@ -501,23 +551,26 @@ void Entangled::Process()
 {
     outputRoot_->cd();
 
-    Int_t startEntry = 0;
-    Int_t endEntry = Entries_;
+    Long64_t startEntry = 0;
+    Long64_t endEntry = Entries_;
 
     if (Part_ != -1)
     {
-        startEntry = (Int_t) ((((Double_t) Part_)/Parts_)*Entries_);
-        endEntry = (Int_t) ((((Double_t) (Part_+1))/Parts_)*Entries_);
+        startEntry = static_cast<Long64_t>((static_cast<Double_t>(Part_   )/Parts_)*Entries_);
+        endEntry =   static_cast<Long64_t>((static_cast<Double_t>(Part_+1 )/Parts_)*Entries_);
     }
 
     std::cout << "Part: " << Part_ << " Starting at: " << startEntry << ", finishing at: " << endEntry << std::endl;
 
-    for (Int_t entry = startEntry; entry < endEntry; entry++)
+    for (Long64_t entry = startEntry; entry < endEntry; entry++)
     {
         if (maxEntries_ != 0 && entry >= maxEntries_)
+        {
+            std::cout << "reached max entries" << std::endl;
             break;
+        }
         ScanEntry(entry);
     }
 
-    PrintCsv();
+//    PrintCsv();
 }
