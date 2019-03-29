@@ -12,7 +12,7 @@
 #define MAX_HITS  65536      // minimal value for sorting 65536
 #define MAX_FILES 256
 #define ENTRY_LOOP 150
-#define MAX_DIFF    156.25//15600 //936        //ns
+#define MAX_DIFF    15625//15600 //936        //ns
 #define CUT_TOT         0
 #define CUT_SIZE        1
 
@@ -36,14 +36,14 @@
 #define X2_LOW   115
 #define X2_HIGH  (X2_LOW + X2_SIZE)
 #define Y2_SIZE  20
-#define Y2_LOW   80
+#define Y2_LOW   90
 #define Y2_HIGH  (Y2_LOW + Y2_SIZE)
 
 #define X2_SIZE_WHOLE  20
 #define X2_LOW_WHOLE   115
 #define X2_HIGH_WHOLE  (X2_LOW_WHOLE + X2_SIZE_WHOLE)
 #define Y2_SIZE_WHOLE  20
-#define Y2_LOW_WHOLE   80
+#define Y2_LOW_WHOLE   90
 #define Y2_HIGH_WHOLE  (Y2_LOW_WHOLE + Y2_SIZE_WHOLE)
 
 #define X1_CUT  1
